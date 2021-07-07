@@ -1,5 +1,6 @@
 mod twitch_reader;
 mod twitch_client;
+mod twitch_vod;
 
 use std::io::{stdin, stdout, Write};
 

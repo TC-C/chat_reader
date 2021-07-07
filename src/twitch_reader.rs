@@ -1,5 +1,6 @@
 use std::io::{stdin, stdout, Write};
 use crate::twitch_client::TwitchClient;
+use crate::twitch_vod::TwitchVOD;
 
 pub fn main() {
     let mut search_type = String::new();
@@ -27,7 +28,10 @@ fn input_vod() {
         .read_line(&mut vod_id)
         .expect("Could not read response for <vod_id>");
     vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
+    let vod_id = vod_id.parse::<u32>().expect("Invalid vod ID, all characters must be numeric");
     let client = TwitchClient::new(
         String::from("cuwhphy3xzy01xn60rddmr57x8hzc6"),
         String::from("9milc7hacuyl8eg5cdpgllbdqpze9u"));
+    let vod = TwitchVOD::new(vod_id);
+    vod.print_chat(String::from(""), client)
 }

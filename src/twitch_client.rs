@@ -7,7 +7,7 @@ use serde_json::Value;
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
 pub struct TwitchClient {
-    pub client_id: String,
+    pub id: String,
     pub access_token: String,
 }
 
@@ -16,18 +16,18 @@ fn clean_quotes(string: String) -> String {
 }
 
 impl TwitchClient {
-    pub fn new(client_id: String, client_secret: String) -> TwitchClient {
+    pub fn new(id: String, client_secret: String) -> TwitchClient {
         let client_access_token: Value = CLIENT.post(format!("https://id.twitch.tv/oauth2/token?grant_type=client_credentials&client_secret={}", client_secret))
-            .header("Client-ID", &client_id)
+            .header("Client-ID", &id)
             .send()
             .expect("https://id.twitch.tv refused to connect")
             .json()
             .unwrap();
         let access_token = clean_quotes(client_access_token.get("access_token")
-            .expect(client_access_token.as_str().unwrap())
+            .expect("Failed to find property access_token")
             .to_string());
         TwitchClient {
-            client_id,
+            id,
             access_token,
         }
     }
