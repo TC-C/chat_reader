@@ -1,14 +1,22 @@
+mod twitch_reader;
+mod twitch_client;
+
 use std::io::{stdin, stdout, Write};
 
 fn main() {
-    let mut vod_link = String::new();
-    println!("This program supports Twitch VOD links");
-    print!("Enter link to VOD >>> ");
+    let mut platform_name = String::new();
+    print!("What platform would you link to pull from (Twitch)? >>> ");
     stdout()
         .flush()
         .expect("Could not flush line when preparing for <vod_link>");
     stdin()
-        .read_line(&mut vod_link)
-        .expect("Could not read response <vod_link>");
-    vod_link = String::from(vod_link.trim_end_matches(&['\r', '\n'][..]));
+        .read_line(&mut platform_name)
+        .expect("Could not read response for <vod_link>");
+    platform_name = String::from(platform_name.trim_end_matches(&['\r', '\n'][..]));
+
+    if platform_name.eq_ignore_ascii_case("Twitch") {
+        twitch_reader::main()
+    } else {
+        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch]", platform_name)
+    }
 }
