@@ -1,2 +1,2 @@
 # Search through VODs and Channels
-Currently, Twitch is the only platform that is supported
+Currently, Twitch and AfreecaTV are the only supported platforms
