@@ -1,9 +1,8 @@
 use crate::twitch_channel::TwitchChannel;
 use lazy_static::lazy_static;
 use reqwest::blocking::Client;
-use serde_json::{Value, json};
+use serde_json::Value;
 use crate::tools::clean_quotes;
-use serde_json::value::Value::Null;
 use regex::Regex;
 
 lazy_static! {static ref CLIENT: Client = Client::new();}

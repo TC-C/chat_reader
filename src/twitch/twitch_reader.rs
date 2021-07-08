@@ -68,6 +68,7 @@ fn input_channel() {
         let title = &vod.title;
         println!("\n{} v{}", title, id);
         let vod = vod;
+        println!("{}", vod.m3u8(&client));
         vod.print_chat(&filter, &client);
     }
 }
@@ -85,6 +86,6 @@ fn input_vod() {
     let vod_id = vod_id.parse::<u32>().expect("Invalid vod ID, all characters must be numeric");
     let filter = get_filter();
     let vod = TwitchVOD::new(vod_id, &client);
-    vod.m3u8(&client);
+    println!("{}", vod.m3u8(&client));
     vod.print_chat(&filter, &client)
 }

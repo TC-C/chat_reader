@@ -68,14 +68,26 @@ impl TwitchVOD {
             }
         }
     }
-    pub fn m3u8(&self, client: &TwitchClient) {
-        let vod_info: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?id={}", self.id))
-            .bearer_auth(&client.access_token)
+    pub fn m3u8(&self, client: &TwitchClient) -> String {
+        let vod_info: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}", self.id))
             .header("Client-ID", &client.id)
             .send()
             .expect("https://api.twitch.tv/ refused to connect")
             .json()
             .unwrap();
-        println!("{}", vod_info);
+        let preview_url = clean_quotes(&vod_info
+            .get("animated_preview_url")
+            .expect("Invalid VOD ID")
+            .to_string());
+        let chunked_index = preview_url.find("storyboards").unwrap();
+        let domain_url = preview_url[0..chunked_index].to_string() + "chunked/";
+        let vod_type = clean_quotes(&vod_info.get("broadcast_type").unwrap().to_string());
+        if vod_type.eq("highlight") {
+            format!("{}highlight-{}.m3u8", domain_url, self.id)
+        } else if vod_type.eq("archive") || vod_type.eq("upload") {
+            format!("{}index-dvr.m3u8", domain_url)
+        } else {
+            format!("https://twitch.tv/videos/{}", self.id)
+        }
     }
 }

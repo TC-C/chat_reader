@@ -10,9 +10,7 @@ mod twitch_channel;
 mod twitch_clip;
 mod tools;
 
-
 use std::io::{stdin, stdout, Write};
-use crate::twitch_clip::print_clips_from;
 
 fn main() {
     let mut platform_name = String::new();
