@@ -3,13 +3,11 @@ use lazy_static::lazy_static;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use crate::twitch_vod::TwitchVOD;
+use crate::tools::clean_quotes;
 
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
-fn clean_quotes(string: String) -> String {
-    string.trim_start_matches("\"").trim_end_matches("\"").to_string()
-}
 
 pub(crate) struct TwitchChannel {
     name: String,

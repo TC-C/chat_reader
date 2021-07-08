@@ -6,6 +6,7 @@ mod twitch_client;
 mod twitch_vod;
 #[path = "twitch/twitch_channel.rs"]
 mod twitch_channel;
+mod tools;
 
 
 use std::io::{stdin, stdout, Write};

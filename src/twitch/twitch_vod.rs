@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use crate::twitch_client::TwitchClient;
+use crate::tools::clean_quotes;
 
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
@@ -11,32 +12,9 @@ pub struct TwitchVOD {
     pub id: u32,
 }
 
-fn format_time(seconds: String) -> String {
-    let seconds: f64 = seconds.parse().unwrap();
-    let seconds = seconds as i16;
-
-    let mut hours = (seconds / (60 * 60)).to_string();
-    if hours.len() == 1 {
-        hours = format!("0{}", hours);
-    }
-    let mut minutes = (seconds / 60 % 60).to_string();
-    if minutes.len() == 1 {
-        minutes = format!("0{}", minutes);
-    }
-    let mut seconds = (seconds % 60).to_string();
-    if seconds.len() == 1 {
-        seconds = format!("0{}", seconds);
-    }
-    return format!("{}:{}:{}", hours, minutes, seconds);
-}
-
-fn clean_quotes(string: String) -> String {
-    string.trim_start_matches("\"").trim_end_matches("\"").to_string()
-}
-
 impl TwitchVOD {
     pub fn new_unchecked(id: u32, title: String) -> TwitchVOD {
-        TwitchVOD{
+        TwitchVOD {
             id,
             title,
         }
