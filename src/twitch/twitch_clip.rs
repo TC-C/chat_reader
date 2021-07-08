@@ -4,10 +4,11 @@ use reqwest::blocking::Client;
 use serde_json::{Value, json};
 use crate::tools::clean_quotes;
 use serde_json::value::Value::Null;
+use regex::Regex;
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
-pub fn print_clips_from(channel: TwitchChannel, pat: String) {
+pub fn print_clips_from(channel: TwitchChannel, filter: Regex) {
     let name = channel.name;
     let mut cursor = String::from("");
     loop {
@@ -46,7 +47,7 @@ pub fn print_clips_from(channel: TwitchChannel, pat: String) {
             let url = clip
                 .get("node").unwrap()
                 .get("url").unwrap().to_string();
-            if title.contains(&pat) {
+            if filter.is_match(&title) {
                 println!("[{}] {}", clean_quotes(&title), clean_quotes(&url))
             }
         }

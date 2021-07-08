@@ -62,13 +62,13 @@ fn input_channel() {
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
     let channel = TwitchChannel::new(channel_name);
     let vods = channel.vods(&client);
+    let filter = get_filter();
     for vod in vods {
         let id = vod.id;
         let title = &vod.title;
         println!("\n{} v{}", title, id);
         let vod = vod;
-        let filter = get_filter();
-        vod.print_chat(filter, &client);
+        vod.print_chat(&filter, &client);
     }
 }
 
@@ -83,8 +83,8 @@ fn input_vod() {
         .expect("Could not read response for <vod_id>");
     vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
     let vod_id = vod_id.parse::<u32>().expect("Invalid vod ID, all characters must be numeric");
-
+    let filter = get_filter();
     let vod = TwitchVOD::new(vod_id, &client);
     vod.m3u8(&client);
-    //vod.print_chat(String::from(""), client)
+    vod.print_chat(&filter, &client)
 }

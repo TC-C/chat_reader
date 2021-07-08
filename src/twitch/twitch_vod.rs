@@ -4,6 +4,7 @@ use serde_json::Value;
 use crate::twitch_client::TwitchClient;
 use crate::tools::clean_quotes;
 use crate::tools::format_time;
+use regex::Regex;
 
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
@@ -36,7 +37,7 @@ impl TwitchVOD {
             id,
         }
     }
-    pub fn print_chat(self, pat: String, client: &TwitchClient) {
+    pub fn print_chat(&self, filter: &Regex, client: &TwitchClient) {
         let mut cursor = String::from("");
         loop {
             let comment_json: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}/comments?cursor={}", self.id, cursor))
@@ -56,7 +57,7 @@ impl TwitchVOD {
                 let message = clean_quotes(&comment
                     .get("message").unwrap()
                     .get("body").unwrap().to_string());
-                if message.contains(&pat) {
+                if filter.is_match(&message) {
                     println!("[{}][{}]: {}", timestamp, display_name, message)
                 }
             }
@@ -67,7 +68,7 @@ impl TwitchVOD {
             }
         }
     }
-    pub fn m3u8(self, client: &TwitchClient) {
+    pub fn m3u8(&self, client: &TwitchClient) {
         let vod_info: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?id={}", self.id))
             .bearer_auth(&client.access_token)
             .header("Client-ID", &client.id)

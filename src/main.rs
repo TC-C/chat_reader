@@ -28,6 +28,7 @@ fn main() {
     if platform_name.eq_ignore_ascii_case("Twitch") {
         twitch_reader::main()
     } else {
-        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch]", platform_name)
+        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch]\n", platform_name);
+        main()
     }
 }

@@ -1,4 +1,5 @@
 use std::io::{stdout, stdin, Write};
+use regex::Regex;
 
 pub fn clean_quotes(string: &String) -> String {
     string.trim_start_matches("\"").trim_end_matches("\"").to_string()
@@ -23,7 +24,7 @@ pub fn format_time(seconds: String) -> String {
     return format!("{}:{}:{}", hours, minutes, seconds);
 }
 
-pub fn get_filter() -> String {
+pub fn get_filter() -> Regex {
     let mut filter = String::new();
     print!("Please enter a phrase you would like to search for >>> ");
     stdout()
@@ -33,5 +34,5 @@ pub fn get_filter() -> String {
         .read_line(&mut filter)
         .expect("Could not read response for <filter>");
     filter = String::from(filter.trim_end_matches(&['\r', '\n'][..]));
-    filter
+    Regex::new(&format!(r"(?i)({})", filter)).expect("Invalid Regex pattern!")
 }
