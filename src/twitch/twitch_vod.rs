@@ -27,7 +27,7 @@ impl TwitchVOD {
             .send()
             .expect("https://api.twitch.tv refused to connect")
             .json().unwrap();
-        let title = clean_quotes(data
+        let title = clean_quotes(&data
             .get("data").expect("Invalid VOD ID ")
             .get(0).unwrap()
             .get("title").unwrap().to_string());
@@ -41,6 +41,7 @@ impl TwitchVOD {
         loop {
             let comment_json: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}/comments?cursor={}", self.id, cursor))
                 .header("Client-ID", &client.id)
+                .header("Connection", "keep-alive")
                 .send()
                 .expect("https://api.twitch.tv refused to connect")
                 .json()
@@ -49,10 +50,10 @@ impl TwitchVOD {
             for comment in comments {
                 let timestamp = format_time(comment
                     .get("content_offset_seconds").unwrap().to_string());
-                let display_name = clean_quotes(comment
+                let display_name = clean_quotes(&comment
                     .get("commenter").unwrap()
                     .get("display_name").unwrap().to_string());
-                let message = clean_quotes(comment
+                let message = clean_quotes(&comment
                     .get("message").unwrap()
                     .get("body").unwrap().to_string());
                 if message.contains(&pat) {
@@ -61,7 +62,7 @@ impl TwitchVOD {
             }
 
             match comment_json.get("_next") {
-                Some(_next) => cursor = clean_quotes(_next.to_string()),
+                Some(_next) => cursor = clean_quotes(&_next.to_string()),
                 None => break
             }
         }

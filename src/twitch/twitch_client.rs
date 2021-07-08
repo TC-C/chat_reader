@@ -19,7 +19,7 @@ impl TwitchClient {
             .expect("https://id.twitch.tv refused to connect")
             .json()
             .unwrap();
-        let access_token = clean_quotes(client_access_token.get("access_token")
+        let access_token = clean_quotes(&client_access_token.get("access_token")
             .expect("Failed to find property: access_token")
             .to_string());
         TwitchClient {

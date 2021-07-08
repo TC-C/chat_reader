@@ -6,10 +6,13 @@ mod twitch_client;
 mod twitch_vod;
 #[path = "twitch/twitch_channel.rs"]
 mod twitch_channel;
+#[path = "twitch/twitch_clip.rs"]
+mod twitch_clip;
 mod tools;
 
 
 use std::io::{stdin, stdout, Write};
+use crate::twitch_clip::print_clips_from;
 
 fn main() {
     let mut platform_name = String::new();

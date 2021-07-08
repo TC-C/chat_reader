@@ -3,6 +3,8 @@ use crate::twitch_client::TwitchClient;
 use crate::twitch_vod::TwitchVOD;
 use crate::twitch_channel::TwitchChannel;
 use lazy_static::lazy_static;
+use crate::twitch_clip::print_clips_from;
+use crate::tools::get_filter;
 
 lazy_static! {static ref client: TwitchClient = TwitchClient::new(
         String::from("cuwhphy3xzy01xn60rddmr57x8hzc6"),
@@ -25,10 +27,28 @@ pub fn main() {
         input_vod()
     } else if search_type.eq_ignore_ascii_case("Channel") {
         input_channel()
+    } else if search_type.eq_ignore_ascii_case("Clips") {
+        get_clips()
     } else {
         eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]", search_type)
     }
 }
+
+fn get_clips() {
+    let mut channel_name = String::new();
+    print!("Input Channel Name >>> ");
+    stdout()
+        .flush()
+        .expect("Could not flush line when preparing for <channel_name>");
+    stdin()
+        .read_line(&mut channel_name)
+        .expect("Could not read response for <channel_name>");
+    channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
+    let channel = TwitchChannel::new(channel_name);
+    let filter = get_filter();
+    print_clips_from(channel, filter)
+}
+
 
 fn input_channel() {
     let mut channel_name = String::new();
@@ -47,7 +67,8 @@ fn input_channel() {
         let title = &vod.title;
         println!("\n{} v{}", title, id);
         let vod = vod;
-        vod.print_chat(String::from(""), &client);
+        let filter = get_filter();
+        vod.print_chat(filter, &client);
     }
 }
 

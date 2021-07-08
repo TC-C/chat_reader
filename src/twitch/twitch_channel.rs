@@ -9,8 +9,8 @@ use crate::tools::clean_quotes;
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
 
-pub(crate) struct TwitchChannel {
-    name: String,
+pub struct TwitchChannel {
+    pub name: String,
 }
 
 impl TwitchChannel {
@@ -47,8 +47,8 @@ impl TwitchChannel {
         let vod_data = data.get("data").expect("invalid user ID").as_array().unwrap();
         let mut vods: Vec<TwitchVOD> = Vec::with_capacity(vod_data.len());
         for vod in vod_data {
-            let vod_id = clean_quotes(vod.get("id").unwrap().to_string()).parse::<u32>().unwrap();
-            let title = clean_quotes(vod.get("title").unwrap().to_string());
+            let vod_id = clean_quotes(&vod.get("id").unwrap().to_string()).parse::<u32>().unwrap();
+            let title = clean_quotes(&vod.get("title").unwrap().to_string());
             let vod = TwitchVOD::new_unchecked(vod_id, title);
             vods.push(vod);
         }

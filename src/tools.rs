@@ -1,8 +1,10 @@
-pub fn clean_quotes(string: String) -> String {
+use std::io::{stdout, stdin, Write};
+
+pub fn clean_quotes(string: &String) -> String {
     string.trim_start_matches("\"").trim_end_matches("\"").to_string()
 }
 
-pub(crate) fn format_time(seconds: String) -> String {
+pub fn format_time(seconds: String) -> String {
     let seconds: f64 = seconds.parse().unwrap();
     let seconds = seconds as i16;
 
@@ -19,4 +21,17 @@ pub(crate) fn format_time(seconds: String) -> String {
         seconds = format!("0{}", seconds);
     }
     return format!("{}:{}:{}", hours, minutes, seconds);
+}
+
+pub fn get_filter() -> String {
+    let mut filter = String::new();
+    print!("Please enter a phrase you would like to search for >>> ");
+    stdout()
+        .flush()
+        .expect("Could not flush line when preparing for <filter>");
+    stdin()
+        .read_line(&mut filter)
+        .expect("Could not read response for <filter>");
+    filter = String::from(filter.trim_end_matches(&['\r', '\n'][..]));
+    filter
 }
