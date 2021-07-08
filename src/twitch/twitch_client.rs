@@ -1,8 +1,6 @@
 use reqwest::blocking::Client;
 use lazy_static::lazy_static;
 use serde_json::Value;
-//client id kimne78kx3ncx6brgo4mv6wki5h1ko
-//OAuth hfcm528b89m5eyturgicl5k6jpx2cb
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
@@ -24,7 +22,7 @@ impl TwitchClient {
             .json()
             .unwrap();
         let access_token = clean_quotes(client_access_token.get("access_token")
-            .expect("Failed to find property access_token")
+            .expect("Failed to find property: access_token")
             .to_string());
         TwitchClient {
             id,

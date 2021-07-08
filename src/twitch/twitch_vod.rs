@@ -1,14 +1,14 @@
-use crate::twitch_client::TwitchClient;
 use lazy_static::lazy_static;
 use reqwest::blocking::Client;
 use serde_json::Value;
+use crate::twitch_client::TwitchClient;
 
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
 pub struct TwitchVOD {
-    title: String,
-    id: u32,
+    pub title: String,
+    pub id: u32,
 }
 
 fn format_time(seconds: String) -> String {
@@ -35,14 +35,29 @@ fn clean_quotes(string: String) -> String {
 }
 
 impl TwitchVOD {
-    pub fn new(id: u32) -> TwitchVOD {
-        let title = String::new();
+    pub fn new_unchecked(id: u32, title: String) -> TwitchVOD {
+        TwitchVOD{
+            id,
+            title,
+        }
+    }
+    pub fn new(id: u32, client: &TwitchClient) -> TwitchVOD {
+        let data: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?id={}", id))
+            .bearer_auth(&client.access_token)
+            .header("Client-ID", &client.id)
+            .send()
+            .expect("https://api.twitch.tv refused to connect")
+            .json().unwrap();
+        let title = clean_quotes(data
+            .get("data").expect("Invalid VOD ID ")
+            .get(0).unwrap()
+            .get("title").unwrap().to_string());
         TwitchVOD {
             title,
             id,
         }
     }
-    pub fn print_chat(self, pat: String, client: TwitchClient) {
+    pub fn print_chat(self, pat: String, client: &TwitchClient) {
         let mut cursor = String::from("");
         loop {
             let comment_json: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}/comments?cursor={}", self.id, cursor))
@@ -71,5 +86,15 @@ impl TwitchVOD {
                 None => break
             }
         }
+    }
+    pub fn m3u8(self, client: &TwitchClient) {
+        let vod_info: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?id={}", self.id))
+            .bearer_auth(&client.access_token)
+            .header("Client-ID", &client.id)
+            .send()
+            .expect("https://api.twitch.tv/ refused to connect")
+            .json()
+            .unwrap();
+        println!("{}", vod_info);
     }
 }

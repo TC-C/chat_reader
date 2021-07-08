@@ -1,6 +1,12 @@
+#[path = "twitch/twitch_reader.rs"]
 mod twitch_reader;
+#[path = "twitch/twitch_client.rs"]
 mod twitch_client;
+#[path = "twitch/twitch_vod.rs"]
 mod twitch_vod;
+#[path = "twitch/twitch_channel.rs"]
+mod twitch_channel;
+
 
 use std::io::{stdin, stdout, Write};
 
