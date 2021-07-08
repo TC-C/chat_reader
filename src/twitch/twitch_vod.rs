@@ -3,7 +3,7 @@ use reqwest::blocking::Client;
 use serde_json::Value;
 use crate::twitch_client::TwitchClient;
 use crate::tools::clean_quotes;
-use crate::tools::format_time;
+use crate::tools::format_time_string;
 use regex::Regex;
 
 
@@ -49,7 +49,7 @@ impl TwitchVOD {
                 .unwrap();
             let comments = comment_json.get("comments").expect(&comment_json.to_string()).as_array().unwrap();
             for comment in comments {
-                let timestamp = format_time(comment
+                let timestamp = format_time_string(comment
                     .get("content_offset_seconds").unwrap().to_string());
                 let display_name = clean_quotes(&comment
                     .get("commenter").unwrap()

@@ -1,11 +1,8 @@
-use crate::twitch_channel::TwitchChannel;
-use lazy_static::lazy_static;
-use reqwest::blocking::Client;
-use serde_json::Value;
-use crate::tools::clean_quotes;
 use regex::Regex;
-
-lazy_static! {static ref CLIENT: Client = Client::new();}
+use serde_json::Value;
+use crate::twitch_channel::TwitchChannel;
+use crate::tools::clean_quotes;
+use crate::tools::CLIENT;
 
 pub fn print_clips_from(channel: TwitchChannel, filter: Regex) {
     let name = channel.name;

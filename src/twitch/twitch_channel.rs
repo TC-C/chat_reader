@@ -1,12 +1,8 @@
 use crate::twitch_client::TwitchClient;
-use lazy_static::lazy_static;
-use reqwest::blocking::Client;
 use serde_json::Value;
 use crate::twitch_vod::TwitchVOD;
 use crate::tools::clean_quotes;
-
-
-lazy_static! {static ref CLIENT: Client = Client::new();}
+use crate::tools::CLIENT;
 
 
 pub struct TwitchChannel {

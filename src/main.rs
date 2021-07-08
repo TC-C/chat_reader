@@ -8,13 +8,18 @@ mod twitch_vod;
 mod twitch_channel;
 #[path = "twitch/twitch_clip.rs"]
 mod twitch_clip;
+#[path = "afreecatv/afreecatv_video.rs"]
+mod afreecatv_video;
+#[path = "afreecatv/afreecatv.rs"]
+mod afreecatv;
+
 mod tools;
 
 use std::io::{stdin, stdout, Write};
 
 fn main() {
     let mut platform_name = String::new();
-    print!("What platform would you link to pull from (Twitch)? >>> ");
+    print!("What platform would you link to pull from (Twitch, AfreecaTV)? >>> ");
     stdout()
         .flush()
         .expect("Could not flush line when preparing for <vod_link>");
@@ -25,8 +30,10 @@ fn main() {
 
     if platform_name.eq_ignore_ascii_case("Twitch") {
         twitch_reader::main()
+    } else if platform_name.eq_ignore_ascii_case("AfreecaTV") {
+        afreecatv::main();
     } else {
-        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch]\n", platform_name);
+        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV]\n", platform_name);
         main()
     }
 }

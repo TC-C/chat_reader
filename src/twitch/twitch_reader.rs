@@ -1,8 +1,8 @@
 use std::io::{stdin, stdout, Write};
+use lazy_static::lazy_static;
 use crate::twitch_client::TwitchClient;
 use crate::twitch_vod::TwitchVOD;
 use crate::twitch_channel::TwitchChannel;
-use lazy_static::lazy_static;
 use crate::twitch_clip::print_clips_from;
 use crate::tools::get_filter;
 
