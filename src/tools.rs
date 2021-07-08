@@ -2,7 +2,7 @@ pub fn clean_quotes(string: String) -> String {
     string.trim_start_matches("\"").trim_end_matches("\"").to_string()
 }
 
-fn format_time(seconds: String) -> String {
+pub(crate) fn format_time(seconds: String) -> String {
     let seconds: f64 = seconds.parse().unwrap();
     let seconds = seconds as i16;
 

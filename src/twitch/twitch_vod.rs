@@ -3,6 +3,7 @@ use reqwest::blocking::Client;
 use serde_json::Value;
 use crate::twitch_client::TwitchClient;
 use crate::tools::clean_quotes;
+use crate::tools::format_time;
 
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
