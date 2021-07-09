@@ -15,10 +15,10 @@ pub struct TwitchVOD {
 }
 
 impl TwitchVOD {
-    pub fn new_unchecked(id: u32, title: String) -> TwitchVOD {
+    pub fn new_unchecked(id: u32, title: &str) -> TwitchVOD {
         TwitchVOD {
             id,
-            title,
+            title: title.to_string(),
         }
     }
     pub fn new(id: u32, client: &TwitchClient) -> TwitchVOD {

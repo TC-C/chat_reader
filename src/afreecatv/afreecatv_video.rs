@@ -21,59 +21,84 @@ hESimjmpn4vuuyKPahezPgzUYwUI6aI40vce6AiWkFZDM6314tglYTo0fMpjqJBeAyBlmvEdT7_JGXCA
 -Z70CuVorJoDrfKCyqL6MrSExwEwxH3b6qKttgtSz6BvEzXg1drLUU6gKfg1m1mUDaHuK_wvDOCEZX7sKcdmEoeuyMrC\
 -1rTCrwsP3m5a_vTK1UrHmAcRT3H8biTle_u6_pjf8Z0JGLjES_3rzTJ9YNH5UFcZ2FyA0nU2nPReG9wirYCspxG3FoZax7zYkhLcFJWy6j1cVpts2N_5kzybkwQvk03JPVGfS9o0ZP3EeqyRAJAY8g_OX;";
 
-pub(crate) fn get_video_info(url: &String) -> String {
-    let view_source = CLIENT.get(url)
-        .send().unwrap().text().unwrap();
-    let station_no = station_no_matcher.find(&view_source)
-        .unwrap().as_str()[11..].parse::<u32>().unwrap();
-    let bbs_no = bbs_no_matcher.find(&view_source)
-        .unwrap().as_str()[7..].parse::<u32>().unwrap();
-    let title_no = title_no_matcher.find(url)
-        .expect("Invalid URL!").as_str()[8..].parse::<u32>().unwrap();
-    format!("https://stbbs.afreecatv.com/api/video/get_video_info.php?nStationNo={}&nBbsNo={}&nTitleNo={}", station_no, bbs_no, title_no)
+pub struct AfreecaVideo {
+    pub title_no: u32,
+    station_no: u32,
+    bbs_no: u32,
 }
 
-pub(crate) fn print_video_chat(info_url: &String) {
-    let xml = CLIENT.get(info_url)
-        .header(COOKIE, cookie)
-        .send().expect("https://stbbs.afreecatv.com refused to connect")
-        .text().unwrap();
-    let mut row_key_iterator = row_key_matcher.find_iter(&xml);
-    let mut row_time_iterator = row_time_matcher.find_iter(&xml);
-    let mut timestamp_secs_added = 0;
-    loop {
-        let row_key_regex = match row_key_iterator.next() {
-            Some(s) => s,
-            None => break
-        };
-        let row_key = row_key_regex.as_str()[5..34].to_string();
-        let row_time = extract_digits(row_time_iterator.next().unwrap().as_str());
-        let mut curr_secs = 0;
 
+impl AfreecaVideo {
+    pub fn new(url: &str) -> AfreecaVideo {
+        let view_source = CLIENT.get(url)
+            .send().unwrap().text().unwrap();
+        let title_no = title_no_matcher.find(url)
+            .expect("Invalid URL!").as_str()[8..].parse::<u32>().unwrap();
+        let station_no = station_no_matcher.find(&view_source)
+            .unwrap().as_str()[11..].parse::<u32>().unwrap();
+        let bbs_no = bbs_no_matcher.find(&view_source)
+            .unwrap().as_str()[7..].parse::<u32>().unwrap();
+        AfreecaVideo {
+            title_no,
+            station_no,
+            bbs_no,
+        }
+    }
+
+    pub fn new_unchecked(title_no: &str, station_no: &str, bbs_no: &str) -> AfreecaVideo {
+        AfreecaVideo {
+            title_no: title_no.parse::<u32>().expect(&format!("{} is NaN", title_no)),
+            station_no: station_no.parse::<u32>().expect(&format!("{} is NaN", station_no)),
+            bbs_no: bbs_no.parse::<u32>().expect(&format!("{} is NaN", bbs_no)),
+        }
+    }
+    fn url(&self) -> String {
+        format!("https://stbbs.afreecatv.com/api/video/get_video_info.php?nStationNo={}&nBbsNo={}&nTitleNo={}", self.station_no, self.bbs_no, self.title_no)
+    }
+    pub fn print_chat(self, filter: &Regex) {
+        let xml = CLIENT.get(self.url())
+            .header(COOKIE, cookie)
+            .send().expect("https://stbbs.afreecatv.com refused to connect")
+            .text().unwrap();
+        let mut row_key_iterator = row_key_matcher.find_iter(&xml);
+        let mut row_time_iterator = row_time_matcher.find_iter(&xml);
+        let mut timestamp_secs_added = 0;
         loop {
-            let transcript_url = format!("https://videoimg.afreecatv.com/php/ChatLoadSplit.php?rowKey={}_c&startTime={}", row_key, curr_secs);
-            let xml = CLIENT.get(&transcript_url)
-                .send().expect("https://videoimg.afreecatv.com refused to connect")
-                .text().unwrap();
-            let doc = match Document::parse(&xml) {
-                Ok(d) => { d }
-                Err(_) => break
+            let row_key_regex = match row_key_iterator.next() {
+                Some(s) => s,
+                None => break
             };
-            let nodes = doc.root().descendants();
-            for node in nodes {
-                if node.tag_name().name() != "chat" {
-                    continue;
+            let row_key = row_key_regex.as_str()[5..34].to_string();
+            let row_time = extract_digits(row_time_iterator.next().unwrap().as_str());
+            let mut curr_secs = 0;
+
+            loop {
+                let transcript_url = format!("https://videoimg.afreecatv.com/php/ChatLoadSplit.php?rowKey={}_c&startTime={}", row_key, curr_secs);
+                let xml = CLIENT.get(&transcript_url)
+                    .send().expect("https://videoimg.afreecatv.com refused to connect")
+                    .text().unwrap();
+                let doc = match Document::parse(&xml) {
+                    Ok(d) => { d }
+                    Err(_) => break
+                };
+                let nodes = doc.root().descendants();
+                for node in nodes {
+                    if node.tag_name().name() != "chat" {
+                        continue;
+                    }
+                    let comment: Vec<Node> = node.children().map(Node::from).collect();
+                    let name = comment[3].text().unwrap();
+                    let message = comment[4].text().unwrap();
+                    let time = comment[6].text().unwrap().parse::<f32>().unwrap() as u32;
+                    if filter.is_match(message) {
+                        println!("[{}][{}]: {}", format_time(time + timestamp_secs_added), name, message);
+                    }
                 }
-                let comment: Vec<Node> = node.children().map(Node::from).collect();
-                let name = comment[3].text().unwrap();
-                let message = comment[4].text().unwrap();
-                let time = comment[6].text().unwrap().parse::<f32>().unwrap() as u32;
-                println!("[{}][{}]: {}", format_time(time + timestamp_secs_added), name, message);
+                if curr_secs > row_time {
+                    timestamp_secs_added += row_time;
+                    break;
+                } else { curr_secs += 300; }
             }
-            if curr_secs > row_time {
-                timestamp_secs_added += row_time;
-                break;
-            } else { curr_secs += 300; }
         }
     }
 }

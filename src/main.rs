@@ -8,14 +8,17 @@ mod twitch_vod;
 mod twitch_channel;
 #[path = "twitch/twitch_clip.rs"]
 mod twitch_clip;
+#[path = "afreecatv/afreecatv_channel.rs"]
+mod afreecatv_channel;
 #[path = "afreecatv/afreecatv_video.rs"]
 mod afreecatv_video;
-#[path = "afreecatv/afreecatv.rs"]
-mod afreecatv;
+#[path = "afreecatv/afreecatv_reader.rs"]
+mod afreecatv_reader;
 
 mod tools;
 
 use std::io::{stdin, stdout, Write};
+use crate::afreecatv_channel::Blog;
 
 fn main() {
     let mut platform_name = String::new();
@@ -31,7 +34,7 @@ fn main() {
     if platform_name.eq_ignore_ascii_case("Twitch") {
         twitch_reader::main()
     } else if platform_name.eq_ignore_ascii_case("AfreecaTV") {
-        afreecatv::main();
+        afreecatv_reader::main();
     } else {
         eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV]\n", platform_name);
         main()
