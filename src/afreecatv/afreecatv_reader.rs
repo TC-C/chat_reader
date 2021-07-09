@@ -5,7 +5,7 @@ use crate::tools::get_filter;
 
 pub fn main() {
     let mut search_type = String::new();
-    print!("Would you like to search through entire Blog, single Video, or clips? >>> ");
+    print!("Would you like to search through entire Blog, single Video? >>> ");
     stdout()
         .flush()
         .expect("Could not flush line when preparing for <search_type>");
