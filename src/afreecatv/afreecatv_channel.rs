@@ -15,6 +15,7 @@ impl Blog {
     pub fn videos(self) -> Vec<AfreecaVideo> {
         let vod_list_url = format!("https://bjapi.afreecatv.com/api/{}/vods/all?per_page=60", self.user_id);
         let vod_list_xml: Value = CLIENT.get(vod_list_url)
+            .header("Connection", "keep-alive")
             .send()
             .expect("https://bjapi.afreecatv.com refused to connect")
             .json().unwrap();

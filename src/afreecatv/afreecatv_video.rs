@@ -1,6 +1,6 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use roxmltree::{Document, Node, Error};
+use roxmltree::{Document, Node};
 use reqwest::header::COOKIE;
 use crate::tools::{CLIENT, extract_digits, format_time};
 lazy_static! {
@@ -13,7 +13,7 @@ lazy_static! {
 	static ref row_time_matcher: Regex = Regex::new(r#"file duration=".*" "#).unwrap();
 }
 //Dummy account for accessing age restricted VODs
-const cookie: &str = "PdboxTicket=.A32.7bbT56vyHM9fKZk.SCwwbeEYGl-\
+const DUMMY_COOKIE: &str = "PdboxTicket=.A32.7bbT56vyHM9fKZk.SCwwbeEYGl-\
 _RK8offHEfHRYug37IvxHp0iHV0ZjIqUgEYDviDxevQx01PU6\
 -AIlExXpKM5FEovtC9uP5EjNQPDwZy2I1EjK9l8WItbBrj5hT7jYYNI34878csX4CiR0cVbPPGjlXxk3U_b3F6jxpL7wjHq1\
 -Bn7H9-CeE-OCrOn1b_4A-pWHT-\
@@ -57,7 +57,8 @@ impl AfreecaVideo {
     }
     pub fn print_chat(self, filter: &Regex) {
         let xml = CLIENT.get(self.url())
-            .header(COOKIE, cookie)
+            .header(COOKIE, DUMMY_COOKIE)
+            .header("Connection", "keep-alive")
             .send().expect("https://stbbs.afreecatv.com refused to connect")
             .text().unwrap();
         let mut row_key_iterator = row_key_matcher.find_iter(&xml);

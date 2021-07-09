@@ -18,7 +18,6 @@ mod afreecatv_reader;
 mod tools;
 
 use std::io::{stdin, stdout, Write};
-use crate::afreecatv_channel::Blog;
 
 fn main() {
     let mut platform_name = String::new();
