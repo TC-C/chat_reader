@@ -72,7 +72,7 @@ impl TwitchVOD {
         let vod_info: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}", self.id))
             .header("Client-ID", &client.id)
             .send()
-            .expect("https://api.twitch.tv/ refused to connect")
+            .expect("https://api.twitch.tv refused to connect")
             .json()
             .unwrap();
         let preview_url = clean_quotes(&vod_info

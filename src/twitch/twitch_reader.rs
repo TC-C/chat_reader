@@ -5,14 +5,18 @@ use crate::twitch_vod::TwitchVOD;
 use crate::twitch_channel::TwitchChannel;
 use crate::twitch_clip::print_clips_from;
 use crate::tools::get_filter;
-
-lazy_static! {static ref client: TwitchClient = TwitchClient::new(
-        String::from("cuwhphy3xzy01xn60rddmr57x8hzc6"),
-        String::from("9milc7hacuyl8eg5cdpgllbdqpze9u"));
-}
-
+use std::sync::mpsc::channel;
+use std::thread;
+use std::thread::JoinHandle;
 
 pub fn main() {
+    let (send, receive) = channel();
+    let get_client_thread = thread::spawn(move || {
+        let twitch_client = TwitchClient::new(
+            String::from("cuwhphy3xzy01xn60rddmr57x8hzc6"),
+            String::from("9milc7hacuyl8eg5cdpgllbdqpze9u"));
+        send.send(twitch_client)
+    });
     let mut search_type = String::new();
     print!("Would you like to search through entire Channel, single VOD, or clips? >>> ");
     stdout()
@@ -22,15 +26,17 @@ pub fn main() {
         .read_line(&mut search_type)
         .expect("Could not read response for <search_type>");
     search_type = String::from(search_type.trim_end_matches(&['\r', '\n'][..]));
-
+    get_client_thread.join();
+    let client = &receive.recv().unwrap();
     if search_type.eq_ignore_ascii_case("VOD") {
-        input_vod()
+        input_vod(client)
     } else if search_type.eq_ignore_ascii_case("Channel") {
-        input_channel()
+        input_channel(client)
     } else if search_type.eq_ignore_ascii_case("Clips") {
         get_clips()
     } else {
-        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]", search_type)
+        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]", search_type);
+        main()
     }
 }
 
@@ -50,7 +56,7 @@ fn get_clips() {
 }
 
 
-fn input_channel() {
+fn input_channel(client: &TwitchClient) {
     let mut channel_name = String::new();
     print!("Input Channel Name >>> ");
     stdout()
@@ -60,20 +66,24 @@ fn input_channel() {
         .read_line(&mut channel_name)
         .expect("Could not read response for <channel_name>");
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
+    let (send, receive) = std::sync::mpsc::channel();
+    let get_filter_thread = thread::spawn(move || {
+        let filter = get_filter();
+        send.send(filter)
+    });
     let channel = TwitchChannel::new(channel_name);
-    let vods = channel.vods(&client);
-    let filter = get_filter();
+    let vods = channel.vods(client);
+    get_filter_thread.join();
+    let filter = receive.recv().unwrap();
     for vod in vods {
         let id = vod.id;
         let title = &vod.title;
         println!("\n{} v{}", title, id);
-        let vod = vod;
-        println!("{}", vod.m3u8(&client));
         vod.print_chat(&filter, &client);
     }
 }
 
-fn input_vod() {
+fn input_vod(client: &TwitchClient) {
     let mut vod_id = String::new();
     print!("Input VOD ID >>> ");
     stdout()
