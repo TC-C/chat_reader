@@ -26,7 +26,7 @@ use std::io::{stdin, stdout, Write};
 
 fn main() {
     let mut platform_name = String::new();
-    print!("What platform would you link to pull from (Twitch, AfreecaTV)? >>> ");
+    print!("What platform would you link to pull from (Twitch, AfreecaTV, YouTube)? >>> ");
     stdout()
         .flush()
         .expect("Could not flush line when preparing for <vod_link>");
@@ -39,8 +39,9 @@ fn main() {
     match platform_name {
         "twitch" => twitch_reader::main(),
         "afreecatv" => afreecatv_reader::main(),
+        "youtube" => youtube_reader::main(),
         _ => {
-            eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV]\n", platform_name);
+            eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV, YouTube]\n", platform_name);
             main()
         }
     }
