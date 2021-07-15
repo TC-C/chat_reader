@@ -25,18 +25,19 @@ pub fn main() {
     stdin()
         .read_line(&mut search_type)
         .expect("Could not read response for <search_type>");
-    search_type = String::from(search_type.trim_end_matches(&['\r', '\n'][..]));
+    search_type = search_type.trim_end_matches(&['\r', '\n'][..]).to_lowercase();
+    let search_type = search_type.as_str();
     get_client_thread.join();
     let client = &receive.recv().unwrap();
-    if search_type.eq_ignore_ascii_case("VOD") {
-        input_vod(client)
-    } else if search_type.eq_ignore_ascii_case("Channel") {
-        input_channel(client)
-    } else if search_type.eq_ignore_ascii_case("Clips") {
-        get_clips()
-    } else {
-        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]", search_type);
-        main()
+
+    match search_type {
+        "vod" => input_vod(client),
+        "channel" => input_channel(client),
+        "clips" => get_clips(),
+        _ => {
+            eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]", search_type);
+            main()
+        }
     }
 }
 
@@ -52,7 +53,7 @@ fn get_clips() {
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
     let channel = TwitchChannel::new(channel_name);
     let filter = get_filter();
-    print_clips_from(channel, filter)
+    print_clips_from(&channel, &filter)
 }
 
 
@@ -79,6 +80,7 @@ fn input_channel(client: &TwitchClient) {
         let id = vod.id;
         let title = &vod.title;
         println!("\n{} v{}", title, id);
+        println!("{}", vod.m3u8(&client));
         vod.print_chat(&filter, &client);
     }
 }

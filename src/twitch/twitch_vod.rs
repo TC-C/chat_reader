@@ -82,12 +82,12 @@ impl TwitchVOD {
         let chunked_index = preview_url.find("storyboards").unwrap();
         let domain_url = preview_url[0..chunked_index].to_string() + "chunked/";
         let vod_type = clean_quotes(&vod_info.get("broadcast_type").unwrap().to_string());
-        if vod_type.eq("highlight") {
-            format!("{}highlight-{}.m3u8", domain_url, self.id)
-        } else if vod_type.eq("archive") || vod_type.eq("upload") {
-            format!("{}index-dvr.m3u8", domain_url)
-        } else {
-            format!("https://twitch.tv/videos/{}", self.id)
+        let vod_type = vod_type.as_str();
+
+        match vod_type {
+            "highlight" => format!("{}highlight-{}.m3u8", domain_url, self.id),
+            "archive" => format!("{}index-dvr.m3u8", domain_url),
+            _ => format!("https://twitch.tv/videos/{}", self.id)
         }
     }
 }

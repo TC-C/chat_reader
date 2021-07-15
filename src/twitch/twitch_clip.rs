@@ -4,12 +4,12 @@ use crate::twitch_channel::TwitchChannel;
 use crate::tools::clean_quotes;
 use crate::tools::CLIENT;
 
-pub fn print_clips_from(channel: TwitchChannel, filter: Regex) {
-    let name = channel.name;
-    let mut cursor = String::from("");
+pub fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
+    let name = &channel.name;
+    let mut cursor = String::new();
     loop {
         let mut did_change = false;
-        let request = "[{\"operationName\":\"ClipsCards__User\",\"variables\":{\"login\":\"".to_owned() + &name + "\",\"limit\":20,\"criteria\":{\"filter\":\"ALL_TIME\"}" + &cursor + "},\"extensions\":{\"persistedQuery\":{\"version\":1,\"sha256Hash\":\"b73ad2bfaecfd30a9e6c28fada15bd97032c83ec77a0440766a56fe0bd632777\"}}}]";
+        let request = "[{\"operationName\":\"ClipsCards__User\",\"variables\":{\"login\":\"".to_owned() + name + "\",\"limit\":20,\"criteria\":{\"filter\":\"ALL_TIME\"}" + &cursor + "},\"extensions\":{\"persistedQuery\":{\"version\":1,\"sha256Hash\":\"b73ad2bfaecfd30a9e6c28fada15bd97032c83ec77a0440766a56fe0bd632777\"}}}]";
         let response: Value = CLIENT.post("https://gql.twitch.tv/gql")
             .header("Client-Id", "kimne78kx3ncx6brgo4mv6wki5h1ko")
             .header("Authorization", "OAuth hfcm528b89m5eyturgicl5k6jpx2cb")
@@ -19,17 +19,15 @@ pub fn print_clips_from(channel: TwitchChannel, filter: Regex) {
             .unwrap()
             .json()
             .unwrap();
-        let clips = response
+        let clips = match response
             .get(0).unwrap()
             .get("data").unwrap()
             .get("user").unwrap()
             .get("clips").expect("Unknown Username!")
-            .get("edges");
-        if clips.is_none() {
-            continue;
-        }
-        let clips = clips.expect(&response.to_string())
-            .as_array().unwrap();
+            .get("edges") {
+            None => { continue; }
+            Some(clips) => clips.as_array().unwrap()
+        };
 
         for clip in clips {
             let temp_cursor = clip.get("cursor").unwrap();

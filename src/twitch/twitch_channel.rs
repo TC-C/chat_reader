@@ -15,7 +15,7 @@ impl TwitchChannel {
             name
         }
     }
-    fn id(self, client: &TwitchClient) -> u64 {
+    fn id(&self, client: &TwitchClient) -> u64 {
         let json_result: Value = CLIENT.get(format!("https://api.twitch.tv/helix/users?login={}", self.name))
             .bearer_auth(&client.access_token)
             .header("Client-ID", &client.id)
@@ -29,8 +29,8 @@ impl TwitchChannel {
             .get("id").unwrap().as_str().unwrap().parse::<u64>().unwrap()
     }
 
-    pub fn vods(self, client: &TwitchClient) -> Vec<TwitchVOD> {
-        let id = self.id(&client);
+    pub fn vods(&self, client: &TwitchClient) -> Vec<TwitchVOD> {
+        let id = self.id(client);
         let client_id = &client.id;
         let access_token = &client.access_token;
 

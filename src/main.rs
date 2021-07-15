@@ -28,14 +28,15 @@ fn main() {
     stdin()
         .read_line(&mut platform_name)
         .expect("Could not read response for <vod_link>");
-    platform_name = String::from(platform_name.trim_end_matches(&['\r', '\n'][..]));
+    platform_name = platform_name.trim_end_matches(&['\r', '\n'][..]).to_lowercase();
+    let platform_name = platform_name.as_str();
 
-    if platform_name.eq_ignore_ascii_case("Twitch") {
-        twitch_reader::main()
-    } else if platform_name.eq_ignore_ascii_case("AfreecaTV") {
-        afreecatv_reader::main();
-    } else {
-        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV]\n", platform_name);
-        main()
+    match platform_name {
+        "twitch" => twitch_reader::main(),
+        "afreecatv" => afreecatv_reader::main(),
+        _ => {
+            eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV]\n", platform_name);
+            main()
+        }
     }
 }

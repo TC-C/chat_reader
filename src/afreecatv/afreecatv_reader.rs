@@ -12,14 +12,13 @@ pub fn main() {
     stdin()
         .read_line(&mut search_type)
         .expect("Could not read response for <search_type>");
-    search_type = String::from(search_type.trim_end_matches(&['\r', '\n'][..]));
+    search_type = search_type.trim_end_matches(&['\r', '\n'][..]).to_lowercase();
+    let search_type = search_type.as_str();
 
-    if search_type.eq_ignore_ascii_case("Video") {
-        input_vod()
-    } else if search_type.eq_ignore_ascii_case("Blog") {
-        input_blog()
-    } else {
-        eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, Video]", search_type)
+    match search_type {
+        "video" => input_vod(),
+        "blog" => input_blog(),
+        _ => eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, Video]", search_type)
     }
 }
 
