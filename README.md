@@ -1,3 +1,5 @@
+<p align="center"><i>If it compiles, it's good; if it boots up, it's perfect - Linus Torvalds</i></p>
+
 # Read and search through the chat from any VOD on Twitch or AfreecaTV
 Currently, Twitch and AfreecaTV are the only supported platforms.
 
