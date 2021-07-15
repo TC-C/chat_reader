@@ -34,14 +34,15 @@ impl YouTubeChannel {
         }
     }
     pub fn comments(&self, search_terms: &str) {
+        let id = &self.id;
         loop {
             let comment_json: Value = CLIENT.get(format!("https://www.googleapis.com/youtube/v3/commentThreads?\
         part=id,snippet&\
-        allThreadsRelatedToChannelId=UC6DR3hG0tHxLt1v9XPOw6TQ&\
+        allThreadsRelatedToChannelId={}&\
         pageToken=&\
         order=Relevance&maxResults=100&\
         search_terms={}&\
-        key={}", search_terms, KEY))
+        key={}", id, search_terms, KEY))
                 .header("Referer", "https://ytcomment.kmcat.uk/")
                 .send()
                 .expect("https://www.googleapis.com refused to connect")
