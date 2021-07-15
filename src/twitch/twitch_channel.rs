@@ -26,7 +26,8 @@ impl TwitchChannel {
         json_result
             .get("data").expect(&format!("The channel name: {}", self.name))
             .get(0).unwrap()
-            .get("id").unwrap().as_str().unwrap().parse::<u64>().unwrap()
+            .get("id").unwrap()
+            .as_u64().unwrap()
     }
 
     pub fn vods(&self, client: &TwitchClient) -> Vec<TwitchVOD> {

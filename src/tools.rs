@@ -4,11 +4,11 @@ use reqwest::blocking::Client;
 use regex::Regex;
 lazy_static! {pub static ref CLIENT: Client = Client::new();}
 
-pub fn clean_quotes(string: &String) -> String {
+pub fn clean_quotes(string: &str) -> String {
     string.trim_start_matches("\"").trim_end_matches("\"").to_string()
 }
 
-pub fn format_time_string(seconds: String) -> String {
+pub fn format_time_string(seconds: &str) -> String {
     let seconds: f32 = seconds.parse().unwrap();
     let seconds = seconds as u32;
     format_time(seconds)

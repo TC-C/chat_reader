@@ -14,9 +14,14 @@ mod afreecatv_channel;
 mod afreecatv_video;
 #[path = "afreecatv/afreecatv_reader.rs"]
 mod afreecatv_reader;
+#[path = "youtube/youtube_channel.rs"]
+mod youtube_channel;
+#[path = "youtube/youtube_reader.rs"]
+mod youtube_reader;
 
 mod tools;
 
+use youtube_channel::YouTubeChannel;
 use std::io::{stdin, stdout, Write};
 
 fn main() {

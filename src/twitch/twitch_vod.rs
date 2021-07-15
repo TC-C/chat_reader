@@ -38,7 +38,7 @@ impl TwitchVOD {
         }
     }
     pub fn print_chat(&self, filter: &Regex, client: &TwitchClient) {
-        let mut cursor = String::from("");
+        let mut cursor = String::new();
         loop {
             let comment_json: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}/comments?cursor={}", self.id, cursor))
                 .header("Client-ID", &client.id)
@@ -49,7 +49,7 @@ impl TwitchVOD {
                 .unwrap();
             let comments = comment_json.get("comments").expect(&comment_json.to_string()).as_array().unwrap();
             for comment in comments {
-                let timestamp = format_time_string(comment
+                let timestamp = format_time_string(&comment
                     .get("content_offset_seconds").unwrap().to_string());
                 let display_name = clean_quotes(&comment
                     .get("commenter").unwrap()
