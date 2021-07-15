@@ -23,10 +23,10 @@ impl TwitchChannel {
             .expect("https://api.twitch.tv refused to connect")
             .json()
             .unwrap();
-        json_result
+        clean_quotes(&json_result
             .get("data").expect(&format!("The channel name: {}", self.name))
             .get(0).unwrap()
-            .get("id").unwrap().to_string().parse::<u64>().unwrap()
+            .get("id").unwrap().to_string()).parse::<u64>().unwrap()
     }
 
     pub fn vods(&self, client: &TwitchClient) -> Vec<TwitchVOD> {
