@@ -14,7 +14,7 @@ Clone the project to some directory:
 `git clone https://github.com/TC-C/vod_search.git`
 
 Next, we can build with Cargo:
-`cargo build --release`
+`cd vod_search && cargo build --release`
 
 You can then run the binary (on *nix OS) with
 `./target/release/chat_reader`
