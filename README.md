@@ -4,3 +4,17 @@
 Currently, Twitch and AfreecaTV are the only supported platforms.
 
 In addition, this tool retrieves direct M3U8 links to Twitch Vods and can search through clips on Twitch Channel
+
+# Build instructions
+
+(If you haven't installed already)
+Install Rust; You can use [Rustup](https://www.rust-lang.org/tools/install)
+
+Clone the project to some directory:
+`git clone https://github.com/TC-C/vod_search.git`
+
+Next, we can build with Cargo:
+`cargo build --release`
+
+You can then run the binary (on *nix OS) with
+`./target/release/chat_reader`
