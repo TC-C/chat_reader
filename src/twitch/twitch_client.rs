@@ -2,6 +2,7 @@ use serde_json::Value;
 use crate::tools::CLIENT;
 use crate::tools::clean_quotes;
 
+#[derive(Clone)]
 pub struct TwitchClient {
     pub id: String,
     pub access_token: String,

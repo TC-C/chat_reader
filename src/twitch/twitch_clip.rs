@@ -42,7 +42,7 @@ pub fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
                 .get("node").unwrap()
                 .get("url").unwrap().to_string();
             if filter.is_match(&title) {
-                println!("[{}] {}", clean_quotes(&title), clean_quotes(&url))
+                print!("[{}] {}", clean_quotes(&title), clean_quotes(&url))
             }
         }
         if !did_change {
