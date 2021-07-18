@@ -5,17 +5,20 @@ use crate::twitch_vod::TwitchVOD;
 use crate::twitch_channel::TwitchChannel;
 use crate::twitch_clip::print_clips_from;
 use crate::tools::get_filter;
-use std::sync::mpsc::channel;
+use std::sync::mpsc::{channel, Receiver, SendError, Sender};
 use std::thread;
 use std::thread::JoinHandle;
+use regex::Regex;
+use std::collections::VecDeque;
+use std::borrow::Borrow;
 
 pub fn main() {
-    let (send, receive) = channel();
+    let (tx, rx) = channel();
     let get_client_thread = thread::spawn(move || {
         let twitch_client = TwitchClient::new(
             String::from("cuwhphy3xzy01xn60rddmr57x8hzc6"),
             String::from("9milc7hacuyl8eg5cdpgllbdqpze9u"));
-        send.send(twitch_client)
+        tx.send(twitch_client)
     });
     let mut search_type = String::new();
     print!("Would you like to search through entire Channel, single VOD, or clips? >>> ");
@@ -28,10 +31,10 @@ pub fn main() {
     search_type = search_type.trim_end_matches(&['\r', '\n'][..]).to_lowercase();
     let search_type = search_type.as_str();
     get_client_thread.join();
-    let client = &receive.recv().unwrap();
+    let client = rx.recv().unwrap();
 
     match search_type {
-        "vod" => input_vod(client),
+        "vod" => input_vod(&client),
         "channel" => input_channel(client),
         "clips" => get_clips(),
         _ => {
@@ -57,7 +60,7 @@ fn get_clips() {
 }
 
 
-fn input_channel(client: &TwitchClient) {
+fn input_channel(client: TwitchClient) {
     let mut channel_name = String::new();
     print!("Input Channel Name >>> ");
     stdout()
@@ -67,21 +70,40 @@ fn input_channel(client: &TwitchClient) {
         .read_line(&mut channel_name)
         .expect("Could not read response for <channel_name>");
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
-    let (send, receive) = std::sync::mpsc::channel();
+    let (tx, rx) = channel();
     let get_filter_thread = thread::spawn(move || {
         let filter = get_filter();
-        send.send(filter)
+        tx.send(filter)
     });
     let channel = TwitchChannel::new(channel_name);
-    let vods = channel.vods(client);
+    let vods = channel.vods(&client);
     get_filter_thread.join();
-    let filter = receive.recv().unwrap();
+    let filter = rx.recv().unwrap();
+
+    let mut threads: VecDeque<(TwitchVOD, Sender<bool>, JoinHandle<()>)> = VecDeque::new();
     for vod in vods {
-        let id = vod.id;
+        vod.title.as_str();
+        //The thread must own all the parameters
+        let (tx, rx) = std::sync::mpsc::channel();
+        let vod_thread = vod.clone();
+        let filter = filter.clone();
+        let client = client.clone();
+        let chat_thread = thread::spawn(move || vod_thread.print_chat(&filter, &client, rx));
+
+        threads.push_back((vod, tx, chat_thread));
+    }
+    for reader in threads {
+        let vod = &reader.0;
+        let tx = reader.1;
+        let chat_thread = reader.2;
+
         let title = &vod.title;
+        let id = vod.id;
+
         println!("\n{} v{}", title, id);
         println!("{}", vod.m3u8(&client));
-        vod.print_chat(&filter, &client);
+        tx.send(true);
+        chat_thread.join();
     }
 }
 
@@ -99,5 +121,8 @@ fn input_vod(client: &TwitchClient) {
     let filter = get_filter();
     let vod = TwitchVOD::new(vod_id, &client);
     println!("{}", vod.m3u8(&client));
-    vod.print_chat(&filter, &client)
+    let (tx, rx) = std::sync::mpsc::channel();
+    tx.send(true); //print immediately
+    let client = client.clone();
+    vod.print_chat(&filter, &client, rx)
 }

@@ -5,10 +5,14 @@ use crate::twitch_client::TwitchClient;
 use crate::tools::clean_quotes;
 use crate::tools::format_time_string;
 use regex::Regex;
+use std::collections::VecDeque;
+use std::thread;
+use std::sync::mpsc::{Receiver, TryRecvError};
 
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
+#[derive(Clone)]
 pub struct TwitchVOD {
     pub title: String,
     pub id: u32,
@@ -37,8 +41,10 @@ impl TwitchVOD {
             id,
         }
     }
-    pub fn print_chat(&self, filter: &Regex, client: &TwitchClient) {
+    pub fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<bool>) {
         let mut cursor = String::new();
+        let mut comment_queue: VecDeque<String> = VecDeque::new();
+        let mut waiting_to_print = true;
         loop {
             let comment_json: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}/comments?cursor={}", self.id, cursor))
                 .header("Client-ID", &client.id)
@@ -58,13 +64,36 @@ impl TwitchVOD {
                     .get("message").unwrap()
                     .get("body").unwrap().to_string());
                 if filter.is_match(&message) {
-                    println!("[{}][{}]: {}", timestamp, display_name, message)
+                    let comment = format!("[{}][{}]: {}", timestamp, display_name, message);
+                    comment_queue.push_back(comment)
+                }
+                if waiting_to_print {
+                    match rx.try_recv() {
+                        Ok(_) => {
+                            waiting_to_print = false;
+                        }
+                        Err(_) => {}
+                    }
+                } else {
+                    TwitchVOD::print_queue(&mut comment_queue)
                 }
             }
-
             match comment_json.get("_next") {
                 Some(_next) => cursor = clean_quotes(&_next.to_string()),
                 None => break
+            }
+        }
+        if !comment_queue.is_empty() {
+            rx.recv();
+            TwitchVOD::print_queue(&mut comment_queue)
+        }
+    }
+
+    fn print_queue(comment_queue: &mut VecDeque<String>) {
+        loop {
+            match comment_queue.pop_front() {
+                None => { break; }
+                Some(comment) => println!("{}", comment)
             }
         }
     }

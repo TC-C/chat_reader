@@ -34,7 +34,7 @@ impl TwitchChannel {
         let client_id = &client.id;
         let access_token = &client.access_token;
 
-        let data: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?user_id={}", id))
+        let data: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?user_id={}&first=100", id))
             .bearer_auth(access_token)
             .header("Client-ID", client_id)
             .send()
