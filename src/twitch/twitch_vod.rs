@@ -12,6 +12,7 @@ use std::sync::mpsc::{Receiver, TryRecvError};
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
+#[derive(Clone)]
 pub struct TwitchVOD {
     pub title: String,
     pub id: u32,
@@ -40,7 +41,7 @@ impl TwitchVOD {
             id,
         }
     }
-    pub fn print_chat(&self, filter: Regex, client: TwitchClient, rx: &Receiver<bool>) {
+    pub fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<bool>) {
         let mut cursor = String::new();
         let mut comment_queue: VecDeque<String> = VecDeque::new();
         let mut waiting_to_print = true;
@@ -66,7 +67,6 @@ impl TwitchVOD {
                     let comment = format!("[{}][{}]: {}", timestamp, display_name, message);
                     comment_queue.push_back(comment)
                 }
-
                 if waiting_to_print {
                     match rx.try_recv() {
                         Ok(_) => {

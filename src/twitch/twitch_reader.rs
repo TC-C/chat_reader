@@ -80,22 +80,30 @@ fn input_channel(client: TwitchClient) {
     get_filter_thread.join();
     let filter = rx.recv().unwrap();
 
-    let mut threads: VecDeque<(Sender<bool>, JoinHandle<()>)> = VecDeque::new();
+    let mut threads: VecDeque<(TwitchVOD, Sender<bool>, JoinHandle<()>)> = VecDeque::new();
     for vod in vods {
         vod.title.as_str();
+        //The thread must own all the parameters
         let (tx, rx) = std::sync::mpsc::channel();
+        let vod_thread = vod.clone();
         let filter = filter.clone();
         let client = client.clone();
-        let chat_thread = thread::spawn(move || vod.print_chat(filter, client, &rx));
+        let chat_thread = thread::spawn(move || vod_thread.print_chat(&filter, &client, rx));
 
-        threads.push_back((tx, chat_thread));
-        // println!("\n{} v{}", title, id);
-        // println!("{}", vod.m3u8(&client));
-        //tx.send(true); MUST send to stop hold
+        threads.push_back((vod, tx, chat_thread));
     }
     for reader in threads {
-        reader.0.send(true);
-        reader.1.join();
+        let vod = &reader.0;
+        let tx = reader.1;
+        let chat_thread = reader.2;
+
+        let title = &vod.title;
+        let id = vod.id;
+
+        println!("\n{} v{}", title, id);
+        println!("{}", vod.m3u8(&client));
+        tx.send(true);
+        chat_thread.join();
     }
 }
 
@@ -116,5 +124,5 @@ fn input_vod(client: &TwitchClient) {
     let (tx, rx) = std::sync::mpsc::channel();
     tx.send(true); //print immediately
     let client = client.clone();
-    vod.print_chat(filter, client, &rx)
+    vod.print_chat(&filter, &client, rx)
 }
