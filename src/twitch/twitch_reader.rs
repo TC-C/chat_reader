@@ -5,13 +5,12 @@ use crate::twitch_channel::TwitchChannel;
 use crate::twitch_clip::print_clips_from;
 use crate::tools::get_filter;
 use std::sync::mpsc::{channel, Sender};
-use std::thread;
-use std::thread::JoinHandle;
+use std::thread::{spawn, JoinHandle};
 use std::collections::VecDeque;
 
 pub fn main() {
     let (tx, rx) = channel();
-    let get_client_thread = thread::spawn(move || {
+    let get_client_thread = spawn(move || {
         let twitch_client = TwitchClient::new(
             "cuwhphy3xzy01xn60rddmr57x8hzc6",
             "9milc7hacuyl8eg5cdpgllbdqpze9u");
@@ -50,9 +49,11 @@ fn get_clips() {
     stdin()
         .read_line(&mut channel_name)
         .expect("Could not read response for <channel_name>");
+    let (tx, rx) = channel();
+    spawn(move || tx.send(get_filter()));
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
     let channel = TwitchChannel::new(&channel_name);
-    let filter = get_filter();
+    let filter = rx.recv().unwrap();
     print_clips_from(&channel, &filter)
 }
 
@@ -68,38 +69,37 @@ fn input_channel(client: TwitchClient) {
         .expect("Could not read response for <channel_name>");
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
     let (tx, rx) = channel();
-    let get_filter_thread = thread::spawn(move || {
-        let filter = get_filter();
-        tx.send(filter)
-    });
+    let get_filter_thread = spawn(move || tx.send(get_filter()));
     let ch = TwitchChannel::new(&channel_name);
     let vods = ch.vods(&client);
     get_filter_thread.join();
     let filter = rx.recv().unwrap();
 
-    let mut threads: VecDeque<(TwitchVOD, Sender<bool>, JoinHandle<()>)> = VecDeque::new();
+    let mut threads: VecDeque<(TwitchVOD, Sender<()>, JoinHandle<()>)> = VecDeque::new();
     for vod in vods {
         //The thread must own all the parameters
         let (tx, rx) = channel();
         let vod_thread = vod.to_owned();
         let filter = filter.to_owned();
         let client = client.to_owned();
-        let chat_thread = thread::spawn(move || vod_thread.print_chat(&filter, &client, rx));
+        let chat_thread = spawn(move || vod_thread.print_chat(&filter, &client, rx));
 
         threads.push_back((vod, tx, chat_thread));
     }
-    for reader in threads {
-        let vod = reader.0;
-        let tx = reader.1;
-        let chat_thread = reader.2;
+    loop {
+        match threads.pop_front() {
+            None => { break; }
+            Some(reader) => {
+                let vod = reader.0;
+                let tx = reader.1;
+                let chat_thread = reader.2;
 
-        let title = &vod.title;
-        let id = vod.id;
-
-        println!("\n{} v{}", title, id);
-        println!("{}", vod.m3u8(&client));
-        tx.send(true);
-        chat_thread.join();
+                println!("\n{} v{}", vod.title, vod.id);
+                println!("{}", vod.m3u8(&client));
+                tx.send(());
+                chat_thread.join();
+            }
+        }
     }
 }
 
@@ -114,8 +114,10 @@ fn input_vod(client: &TwitchClient) {
         .expect("Could not read response for <vod_id>");
     vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
     let vod_id = vod_id.parse::<u32>().unwrap();
-    let filter = get_filter();
+    let (tx, rx) = channel();
+    spawn(move || tx.send(get_filter()));
     let vod = TwitchVOD::new(vod_id, client);
+    let filter = rx.recv().unwrap();
     println!("{}", vod.m3u8(client));
     vod.print_chat_blocking(&filter, client)
 }

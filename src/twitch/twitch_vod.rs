@@ -49,14 +49,14 @@ impl TwitchVOD {
             id,
         }
     }
-    /// Identical function to `twitch_vod::print_chat()` except that no Receiver<bool> is required.
+    /// Identical function to `twitch_vod::print_chat()` except that no Receiver<())> is required.
     ///
     /// Comments will be printed as soon as they are parsed and will not remain in a queue
     ///
     /// This is recommended for single thread use cases
     pub fn print_chat_blocking(&self, filter: &Regex, client: &TwitchClient) {
         let (tx, rx) = channel();
-        tx.send(true); //print immediately
+        tx.send(()); //print immediately
         self.print_chat(&filter, &client, rx)
     }
 
@@ -69,7 +69,7 @@ impl TwitchVOD {
     /// The `rx: Receiver<bool>` is used to determine when the comments should be printed out
     ///
     /// By default, the outputs are queued into `comment_queue` and then will be allowed to print only when `rx` receives a boolean from a `Sender<bool>`
-    pub fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<bool>) {
+    pub fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<()>) {
         let mut cursor = String::new();
         let mut comment_queue: VecDeque<String> = VecDeque::new();
         let mut waiting_to_print = true;
@@ -96,11 +96,8 @@ impl TwitchVOD {
                     comment_queue.push_back(comment)
                 }
                 if waiting_to_print {
-                    match rx.try_recv() {
-                        Ok(_) => {
-                            waiting_to_print = false;
-                        }
-                        Err(_) => {}
+                    if rx.try_recv().is_ok() {
+                        waiting_to_print = false
                     }
                 } else {
                     print_queue(&mut comment_queue)
