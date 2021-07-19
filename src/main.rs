@@ -21,7 +21,6 @@ mod youtube_reader;
 
 mod tools;
 
-use youtube_channel::YouTubeChannel;
 use std::io::{stdin, stdout, Write};
 
 fn main() {

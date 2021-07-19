@@ -1,16 +1,13 @@
 use std::io::{stdin, stdout, Write};
-use lazy_static::lazy_static;
 use crate::twitch_client::TwitchClient;
 use crate::twitch_vod::TwitchVOD;
 use crate::twitch_channel::TwitchChannel;
 use crate::twitch_clip::print_clips_from;
 use crate::tools::get_filter;
-use std::sync::mpsc::{channel, Receiver, SendError, Sender};
+use std::sync::mpsc::{channel, Sender};
 use std::thread;
 use std::thread::JoinHandle;
-use regex::Regex;
 use std::collections::VecDeque;
-use std::borrow::Borrow;
 
 pub fn main() {
     let (tx, rx) = channel();
@@ -75,19 +72,18 @@ fn input_channel(client: TwitchClient) {
         let filter = get_filter();
         tx.send(filter)
     });
-    let channel = TwitchChannel::new(channel_name);
-    let vods = channel.vods(&client);
+    let ch = TwitchChannel::new(channel_name);
+    let vods = ch.vods(&client);
     get_filter_thread.join();
     let filter = rx.recv().unwrap();
 
     let mut threads: VecDeque<(TwitchVOD, Sender<bool>, JoinHandle<()>)> = VecDeque::new();
     for vod in vods {
-        vod.title.as_str();
         //The thread must own all the parameters
-        let (tx, rx) = std::sync::mpsc::channel();
-        let vod_thread = vod.clone();
-        let filter = filter.clone();
-        let client = client.clone();
+        let (tx, rx) = channel();
+        let vod_thread = vod.to_owned();
+        let filter = filter.to_owned();
+        let client = client.to_owned();
         let chat_thread = thread::spawn(move || vod_thread.print_chat(&filter, &client, rx));
 
         threads.push_back((vod, tx, chat_thread));
@@ -118,11 +114,8 @@ fn input_vod(client: &TwitchClient) {
         .expect("Could not read response for <vod_id>");
     vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
     let vod_id = vod_id.parse::<u32>().expect("Invalid vod ID, all characters must be numeric");
-    let filter = get_filter();
+    let filter = &get_filter();
     let vod = TwitchVOD::new(vod_id, &client);
     println!("{}", vod.m3u8(&client));
-    let (tx, rx) = std::sync::mpsc::channel();
-    tx.send(true); //print immediately
-    let client = client.clone();
-    vod.print_chat(&filter, &client, rx)
+    vod.print_chat_blocking(filter, client)
 }

@@ -1,7 +1,6 @@
 use crate::tools::CLIENT;
 use serde_json::Value;
 use crate::afreecatv_video::AfreecaVideo;
-use std::thread;
 
 pub struct Blog {
     user_id: String,

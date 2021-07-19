@@ -1,12 +1,10 @@
 use serde_json::Value;
 use crate::tools::clean_quotes;
 use crate::tools::CLIENT;
-use lazy_static::lazy_static;
 
 const KEY: &str = "AIzaSyCOUG9NmlrerQC5OnS3Erbh5K34PobYDQE";
 
 pub struct YouTubeChannel {
-    query: String,
     id: String,
 }
 
@@ -29,7 +27,6 @@ impl YouTubeChannel {
             .get("id").unwrap()
             .get("channelId").unwrap().to_string());
         YouTubeChannel {
-            query,
             id,
         }
     }

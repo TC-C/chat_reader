@@ -6,8 +6,7 @@ use crate::tools::clean_quotes;
 use crate::tools::format_time_string;
 use regex::Regex;
 use std::collections::VecDeque;
-use std::thread;
-use std::sync::mpsc::{Receiver, TryRecvError};
+use std::sync::mpsc::{Receiver, channel};
 
 
 lazy_static! {static ref CLIENT: Client = Client::new();}
@@ -41,6 +40,26 @@ impl TwitchVOD {
             id,
         }
     }
+    /// Identical function to `twitch_vod::print_chat()` except that no Receiver<bool> is required.
+    ///
+    /// Comments will be printed as soon as they are parsed and will not remain in a queue
+    ///
+    /// This is recommended for single thread use cases
+    pub fn print_chat_blocking(&self, filter: &Regex, client: &TwitchClient) {
+        let (tx, rx) = channel();
+        tx.send(true); //print immediately
+        self.print_chat(&filter, &client, rx)
+    }
+
+    /// Prints the chat to console from an individual `TwitchVOD`
+    ///
+    /// This required parameters are a `TwitchVOD` with a valid name, `Regex` filter, and `Receiver<bool>`
+    ///
+    /// All `comments: String` will be ran through the passed `Regex` and only comments that return a match to the filter will be displayed
+    ///
+    /// The `rx: Receiver<bool>` is used to determine when the comments should be printed out
+    ///
+    /// By default, the outputs are queued into `comment_queue` and then will be allowed to print only when `rx` receives a boolean from a `Sender<bool>`
     pub fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<bool>) {
         let mut cursor = String::new();
         let mut comment_queue: VecDeque<String> = VecDeque::new();
@@ -88,7 +107,7 @@ impl TwitchVOD {
             TwitchVOD::print_queue(&mut comment_queue)
         }
     }
-
+    /// Private function to call println! on all `String`s in a VecDeque whilst emptying it
     fn print_queue(comment_queue: &mut VecDeque<String>) {
         loop {
             match comment_queue.pop_front() {
@@ -97,6 +116,11 @@ impl TwitchVOD {
             }
         }
     }
+    /// When possible, returns a `String` representation of the M3U8 playlist link for the associated VOD
+    ///
+    /// Requires video ID to be valid
+    ///
+    /// In special cases, such as for channel trailers, where M3U8's cannot be easily computed, the official VOD link is returned
     pub fn m3u8(&self, client: &TwitchClient) -> String {
         let vod_info: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}", self.id))
             .header("Client-ID", &client.id)
