@@ -13,8 +13,8 @@ pub fn main() {
     let (tx, rx) = channel();
     let get_client_thread = thread::spawn(move || {
         let twitch_client = TwitchClient::new(
-            String::from("cuwhphy3xzy01xn60rddmr57x8hzc6"),
-            String::from("9milc7hacuyl8eg5cdpgllbdqpze9u"));
+            "cuwhphy3xzy01xn60rddmr57x8hzc6",
+            "9milc7hacuyl8eg5cdpgllbdqpze9u");
         tx.send(twitch_client)
     });
     let mut search_type = String::new();
@@ -51,7 +51,7 @@ fn get_clips() {
         .read_line(&mut channel_name)
         .expect("Could not read response for <channel_name>");
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
-    let channel = TwitchChannel::new(channel_name);
+    let channel = TwitchChannel::new(&channel_name);
     let filter = get_filter();
     print_clips_from(&channel, &filter)
 }
@@ -72,7 +72,7 @@ fn input_channel(client: TwitchClient) {
         let filter = get_filter();
         tx.send(filter)
     });
-    let ch = TwitchChannel::new(channel_name);
+    let ch = TwitchChannel::new(&channel_name);
     let vods = ch.vods(&client);
     get_filter_thread.join();
     let filter = rx.recv().unwrap();
@@ -89,7 +89,7 @@ fn input_channel(client: TwitchClient) {
         threads.push_back((vod, tx, chat_thread));
     }
     for reader in threads {
-        let vod = &reader.0;
+        let vod = reader.0;
         let tx = reader.1;
         let chat_thread = reader.2;
 
@@ -113,9 +113,9 @@ fn input_vod(client: &TwitchClient) {
         .read_line(&mut vod_id)
         .expect("Could not read response for <vod_id>");
     vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
-    let vod_id = vod_id.parse::<u32>().expect("Invalid vod ID, all characters must be numeric");
-    let filter = &get_filter();
-    let vod = TwitchVOD::new(vod_id, &client);
-    println!("{}", vod.m3u8(&client));
-    vod.print_chat_blocking(filter, client)
+    let vod_id = vod_id.parse::<u32>().unwrap();
+    let filter = get_filter();
+    let vod = TwitchVOD::new(vod_id, client);
+    println!("{}", vod.m3u8(client));
+    vod.print_chat_blocking(&filter, client)
 }

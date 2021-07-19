@@ -2,13 +2,10 @@ use lazy_static::lazy_static;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use crate::twitch_client::TwitchClient;
-use crate::tools::clean_quotes;
-use crate::tools::format_time_string;
+use crate::tools::{clean_quotes, format_time_string, print_queue};
 use regex::Regex;
 use std::collections::VecDeque;
 use std::sync::mpsc::{Receiver, channel};
-
-
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
 #[derive(Clone)]
@@ -18,23 +15,35 @@ pub struct TwitchVOD {
 }
 
 impl TwitchVOD {
+    /// Creates a new `TwitchVOD` from a `u32` that represents an ID and an `&str` that represents the title
+    ///
+    /// The function will not check any values and may result in errors when calling other functions
     pub fn new_unchecked(id: u32, title: &str) -> TwitchVOD {
         TwitchVOD {
             id,
-            title: title.to_string(),
+            title: String::from(title),
         }
     }
+    /// Creates a new `TwitchVOD` from a `u32` that represents the ID of the VOD
+    ///
+    /// A valid ID would be `799499623`, which can be derived from the VOD URL: https://www.twitch.tv/videos/799499623
     pub fn new(id: u32, client: &TwitchClient) -> TwitchVOD {
         let data: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?id={}", id))
             .bearer_auth(&client.access_token)
             .header("Client-ID", &client.id)
             .send()
-            .expect("https://api.twitch.tv refused to connect")
+            .unwrap()
             .json().unwrap();
-        let title = clean_quotes(&data
-            .get("data").expect("Invalid VOD ID ")
-            .get(0).unwrap()
-            .get("title").unwrap().to_string());
+        let title = match data
+            .get("data") {
+            None => {
+                eprintln!("\nThe VOD ID {} could not be found", id);
+                std::process::exit(-1)
+            }
+            Some(data) =>
+                clean_quotes(&data.get(0).unwrap()
+                    .get("title").unwrap().to_string())
+        };
         TwitchVOD {
             title,
             id,
@@ -94,7 +103,7 @@ impl TwitchVOD {
                         Err(_) => {}
                     }
                 } else {
-                    TwitchVOD::print_queue(&mut comment_queue)
+                    print_queue(&mut comment_queue)
                 }
             }
             match comment_json.get("_next") {
@@ -104,18 +113,10 @@ impl TwitchVOD {
         }
         if !comment_queue.is_empty() {
             rx.recv();
-            TwitchVOD::print_queue(&mut comment_queue)
+            print_queue(&mut comment_queue)
         }
     }
-    /// Private function to call println! on all `String`s in a VecDeque whilst emptying it
-    fn print_queue(comment_queue: &mut VecDeque<String>) {
-        loop {
-            match comment_queue.pop_front() {
-                None => { break; }
-                Some(comment) => println!("{}", comment)
-            }
-        }
-    }
+
     /// When possible, returns a `String` representation of the M3U8 playlist link for the associated VOD
     ///
     /// Requires video ID to be valid

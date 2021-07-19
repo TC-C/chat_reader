@@ -1,8 +1,7 @@
 use regex::Regex;
 use serde_json::Value;
 use crate::twitch_channel::TwitchChannel;
-use crate::tools::clean_quotes;
-use crate::tools::CLIENT;
+use crate::tools::{clean_quotes, CLIENT};
 
 pub fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
     let name = &channel.name;
