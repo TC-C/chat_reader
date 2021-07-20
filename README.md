@@ -20,3 +20,5 @@ Next, we can build with Cargo:
 You can then run the binary (on *nix OS) with
 `./target/release/chat_reader`
 
+(On Windows? The .exe will be located in the same folder)
+
