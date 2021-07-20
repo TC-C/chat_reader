@@ -18,7 +18,7 @@ pub fn main() {
     match search_type {
         "video" => input_vod(),
         "blog" => input_blog(),
-        _ => eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, Video]", search_type)
+        _ => eprintln!("\n'{}' was an unexpected response\nPlease choose between [Blog, Video]", search_type)
     }
 }
 

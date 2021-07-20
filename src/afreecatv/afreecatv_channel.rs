@@ -1,7 +1,10 @@
 use crate::tools::CLIENT;
 use serde_json::Value;
 use crate::afreecatv_video::AfreecaVideo;
+use std::collections::VecDeque;
+use std::thread::{spawn, JoinHandle};
 
+#[derive(Clone)]
 pub struct Blog {
     user_id: String,
 }
@@ -20,24 +23,38 @@ impl Blog {
             .expect("https://bjapi.afreecatv.com refused to connect")
             .json().unwrap();
         let limit = vod_list_xml
-            .get("meta").expect(&vod_list_xml.to_string())
+            .get("meta").unwrap()
             .get("last_page").unwrap().as_u64().unwrap();
         let size = vod_list_xml
             .get("meta").unwrap()
             .get("total").unwrap().as_u64().unwrap();
         let mut videos: Vec<AfreecaVideo> = Vec::with_capacity(size as usize);
 
+        let mut page_chunks: VecDeque<JoinHandle<Vec<AfreecaVideo>>> = VecDeque::with_capacity(limit as usize);
+
         for i in 1..limit + 1 {
-            self.load_videos_chunk(&mut videos, i)
+            let blog = self.to_owned();
+            let retrieval_thread = spawn(move || blog.load_videos_chunk(i));
+            page_chunks.push_back(retrieval_thread)
+        }
+        loop {
+            match page_chunks.pop_front() {
+                None => { break; }
+                Some(thread) => {
+                    let mut thread_videos = thread.join().unwrap();
+                    videos.append(&mut thread_videos)
+                }
+            }
         }
         videos
     }
 
-    fn load_videos_chunk(&self, videos: &mut Vec<AfreecaVideo>, i: u64) {
+    fn load_videos_chunk(&self, i: u64) -> Vec<AfreecaVideo> {
+        let mut videos: Vec<AfreecaVideo> = Vec::with_capacity(60);
         let vod_list_url = format!("https://bjapi.afreecatv.com/api/{}/vods/all?page={}&per_page=60", self.user_id, i);
         let vod_list_xml: Value = CLIENT.get(vod_list_url)
             .send()
-            .expect("https://bjapi.afreecatv.com refused to connect")
+            .unwrap()
             .json().unwrap();
         //println!("{}", vod_list_xml);
         let vods = vod_list_xml
@@ -50,5 +67,6 @@ impl Blog {
             let video = AfreecaVideo::new_unchecked(&title_no, &station_no, &bbs_no);
             videos.push(video);
         }
+        videos
     }
 }
