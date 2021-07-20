@@ -2,6 +2,7 @@ use std::io::{stdout, stdin, Write};
 use crate::afreecatv_video::AfreecaVideo;
 use crate::afreecatv_channel::Blog;
 use crate::tools::get_filter;
+use std::thread::spawn;
 
 pub fn main() {
     let mut search_type = String::new();
@@ -18,7 +19,10 @@ pub fn main() {
     match search_type {
         "video" => input_vod(),
         "blog" => input_blog(),
-        _ => eprintln!("\n'{}' was an unexpected response\nPlease choose between [Blog, Video]", search_type)
+        _ => {
+            eprintln!("\n'{}' was an unexpected response\nPlease choose between [Blog, Video]\n", search_type);
+            main()
+        }
     }
 }
 
@@ -32,8 +36,9 @@ pub fn input_vod() {
         .read_line(&mut vod_link)
         .expect("Could not read response for <vod_link>");
     vod_link = String::from(vod_link.trim_end_matches(&['\r', '\n'][..]));
-    let video = AfreecaVideo::new(&vod_link);
+    let video_get_thread = spawn(move || AfreecaVideo::new(&vod_link));
     let filter = get_filter();
+    let video = video_get_thread.join().unwrap();
     video.print_chat(&filter);
 }
 
@@ -47,9 +52,12 @@ pub fn input_blog() {
         .read_line(&mut blog_name)
         .expect("Could not read response for <blog_name>");
     blog_name = String::from(blog_name.trim_end_matches(&['\r', '\n'][..]));
-    let blog = Blog::new(&blog_name);
-    let videos = blog.videos();
+    let videos_get_thread = spawn(move || {
+        let blog = Blog::new(&blog_name);
+        blog.videos()
+    });
     let filter = get_filter();
+    let videos = videos_get_thread.join().unwrap();
     for video in videos {
         println!("\nWorking on: {}", video.title_no);
         video.print_chat(&filter);
