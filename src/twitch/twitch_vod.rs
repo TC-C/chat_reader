@@ -48,7 +48,7 @@ impl TwitchVOD {
             id,
         }
     }
-    /// Identical function to `twitch_vod::print_chat()` except that no Receiver<())> is required.
+    /// Identical function to `twitch_vod::print_chat()` except that no Receiver<()> is required.
     ///
     /// Comments will be printed as soon as they are parsed and will not remain in a queue
     ///
@@ -95,12 +95,8 @@ impl TwitchVOD {
                     comment_queue.push(comment)
                 }
                 if waiting_to_print {
-                    if rx.try_recv().is_ok() {
-                        waiting_to_print = false
-                    }
-                } else {
-                    print_queue(&mut comment_queue)
-                }
+                    if rx.try_recv().is_ok() { waiting_to_print = false }
+                } else { print_queue(&mut comment_queue) }
             }
             match comment_json.get("_next") {
                 Some(_next) => cursor = clean_quotes(&_next.to_string()),

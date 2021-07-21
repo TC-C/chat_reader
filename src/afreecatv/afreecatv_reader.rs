@@ -2,8 +2,8 @@ use std::io::{stdout, stdin, Write};
 use crate::afreecatv_video::AfreecaVideo;
 use crate::afreecatv_channel::Blog;
 use crate::tools::get_filter;
-use std::thread::spawn;
-use std::sync::mpsc::{Receiver, channel};
+use std::thread::{spawn, JoinHandle};
+use std::sync::mpsc::{Receiver, channel, Sender};
 
 pub fn main() {
     let mut search_type = String::new();
@@ -40,9 +40,7 @@ pub fn input_vod() {
     let video_get_thread = spawn(move || AfreecaVideo::new(&vod_link));
     let filter = get_filter();
     let video = video_get_thread.join().unwrap();
-    let (tx, rx) = channel();
-    tx.send(());
-    video.print_chat(&filter, rx);
+    video.print_chat_blocking(&filter);
 }
 
 pub fn input_blog() {
@@ -62,11 +60,22 @@ pub fn input_blog() {
 
     let filter = get_filter();
     let videos = videos_get_thread.join().unwrap();
+
+    let mut threads: Vec<(AfreecaVideo, Sender<()>, JoinHandle<()>)> = Vec::new();
     for video in videos {
         let (tx, rx) = channel();
-        tx.send(());
+        let filter = filter.to_owned();
+        let video_thread = video.to_owned();
+        let thread = spawn(move || video_thread.print_chat(&filter, rx));
+        threads.push((video, tx, thread))
+    }
+    for reader in threads {
+        let video = reader.0;
+        let tx = reader.1;
+        let chat_thread = reader.2;
 
         println!("\nWorking on: {}", video.title_no);
-        video.print_chat(&filter, rx);
+        tx.send(());
+        chat_thread.join();
     }
 }

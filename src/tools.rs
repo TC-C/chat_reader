@@ -15,7 +15,7 @@ pub fn format_time_string(seconds: &str) -> String {
     format_time(seconds)
 }
 
-/// function to call println! on all `String`s in a VecDeque whilst emptying it
+/// function to call println! on all `String`s in a Vec whilst emptying it
 pub fn print_queue(comment_queue: &mut Vec<String>) {
     let cq = comment_queue.into_iter();
     for comment in cq {
