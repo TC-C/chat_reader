@@ -45,7 +45,6 @@ impl Blog {
 
     fn load_videos_chunk(&self, i: u64) -> Vec<AfreecaVideo> {
         let mut videos: Vec<AfreecaVideo> = Vec::with_capacity(60);
-        //let mut video_threads: Vec<JoinHandle<AfreecaVideo>> = Vec::with_capacity(60);
         let vod_list_url = format!("https://bjapi.afreecatv.com/api/{}/vods/all?page={}&per_page=60", self.user_id, i);
         let vod_list_xml: Value = CLIENT.get(vod_list_url)
             .send()

@@ -4,7 +4,6 @@ use serde_json::Value;
 use crate::twitch_client::TwitchClient;
 use crate::tools::{clean_quotes, format_time_string, print_queue};
 use regex::Regex;
-use std::collections::VecDeque;
 use std::sync::mpsc::{Receiver, channel};
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
@@ -71,7 +70,7 @@ impl TwitchVOD {
     /// By default, the outputs are queued into `comment_queue` and then will be allowed to print only when `rx` receives a boolean from a `Sender<bool>`
     pub fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<()>) {
         let mut cursor = String::new();
-        let mut comment_queue: VecDeque<String> = VecDeque::new();
+        let mut comment_queue: Vec<String> = Vec::new();
         let mut waiting_to_print = true;
         loop {
             let comment_json: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}/comments?cursor={}", self.id, cursor))
@@ -93,7 +92,7 @@ impl TwitchVOD {
                     .get("body").unwrap().to_string());
                 if filter.is_match(&message) {
                     let comment = format!("[{}][{}]: {}", timestamp, display_name, message);
-                    comment_queue.push_back(comment)
+                    comment_queue.push(comment)
                 }
                 if waiting_to_print {
                     if rx.try_recv().is_ok() {

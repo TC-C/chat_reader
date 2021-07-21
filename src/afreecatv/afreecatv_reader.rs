@@ -3,6 +3,7 @@ use crate::afreecatv_video::AfreecaVideo;
 use crate::afreecatv_channel::Blog;
 use crate::tools::get_filter;
 use std::thread::spawn;
+use std::sync::mpsc::{Receiver, channel};
 
 pub fn main() {
     let mut search_type = String::new();
@@ -39,7 +40,9 @@ pub fn input_vod() {
     let video_get_thread = spawn(move || AfreecaVideo::new(&vod_link));
     let filter = get_filter();
     let video = video_get_thread.join().unwrap();
-    video.print_chat(&filter);
+    let (tx, rx) = channel();
+    tx.send(());
+    video.print_chat(&filter, rx);
 }
 
 pub fn input_blog() {
@@ -56,10 +59,14 @@ pub fn input_blog() {
         let blog = Blog::new(&blog_name);
         blog.videos()
     });
+
     let filter = get_filter();
     let videos = videos_get_thread.join().unwrap();
     for video in videos {
+        let (tx, rx) = channel();
+        tx.send(());
+
         println!("\nWorking on: {}", video.title_no);
-        video.print_chat(&filter);
+        video.print_chat(&filter, rx);
     }
 }

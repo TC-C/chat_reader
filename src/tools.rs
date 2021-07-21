@@ -16,13 +16,12 @@ pub fn format_time_string(seconds: &str) -> String {
 }
 
 /// function to call println! on all `String`s in a VecDeque whilst emptying it
-pub fn print_queue(comment_queue: &mut VecDeque<String>) {
-    loop {
-        match comment_queue.pop_front() {
-            None => { break; }
-            Some(comment) => println!("{}", comment)
-        }
+pub fn print_queue(comment_queue: &mut Vec<String>) {
+    let cq = comment_queue.into_iter();
+    for comment in cq {
+        println!("{}", comment)
     }
+    comment_queue.clear()
 }
 
 pub fn format_time(seconds: u32) -> String {

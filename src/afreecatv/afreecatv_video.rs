@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use roxmltree::{Document, Node};
 use reqwest::header::COOKIE;
+use std::sync::mpsc::{Receiver, channel};
 use crate::tools::{CLIENT, extract_digits, format_time};
 lazy_static! {
 	//working on initial URL
@@ -55,7 +56,7 @@ impl AfreecaVideo {
     fn url(&self) -> String {
         format!("https://stbbs.afreecatv.com/api/video/get_video_info.php?nStationNo={}&nBbsNo={}&nTitleNo={}", self.station_no, self.bbs_no, self.title_no)
     }
-    pub fn print_chat(self, filter: &Regex) {
+    pub fn print_chat(self, filter: &Regex, rx: Receiver<()>) {
         let xml = CLIENT.get(self.url())
             .header(COOKIE, DUMMY_COOKIE)
             .header("Connection", "keep-alive")
