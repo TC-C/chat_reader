@@ -1,7 +1,6 @@
 use crate::tools::CLIENT;
 use serde_json::Value;
 use crate::afreecatv_video::AfreecaVideo;
-use std::collections::VecDeque;
 use std::thread::{spawn, JoinHandle};
 
 #[derive(Clone)]
@@ -30,27 +29,23 @@ impl Blog {
             .get("total").unwrap().as_u64().unwrap();
         let mut videos: Vec<AfreecaVideo> = Vec::with_capacity(size as usize);
 
-        let mut page_chunks: VecDeque<JoinHandle<Vec<AfreecaVideo>>> = VecDeque::with_capacity(limit as usize);
+        let mut page_chunks: Vec<JoinHandle<Vec<AfreecaVideo>>> = Vec::with_capacity(limit as usize);
 
         for i in 1..limit + 1 {
             let blog = self.to_owned();
             let retrieval_thread = spawn(move || blog.load_videos_chunk(i));
-            page_chunks.push_back(retrieval_thread)
+            page_chunks.push(retrieval_thread)
         }
-        loop {
-            match page_chunks.pop_front() {
-                None => { break; }
-                Some(thread) => {
-                    let mut thread_videos = thread.join().unwrap();
-                    videos.append(&mut thread_videos)
-                }
-            }
+        for page_chunk in page_chunks {
+            let mut thread_videos = page_chunk.join().unwrap();
+            videos.append(&mut thread_videos)
         }
         videos
     }
 
     fn load_videos_chunk(&self, i: u64) -> Vec<AfreecaVideo> {
         let mut videos: Vec<AfreecaVideo> = Vec::with_capacity(60);
+        //let mut video_threads: Vec<JoinHandle<AfreecaVideo>> = Vec::with_capacity(60);
         let vod_list_url = format!("https://bjapi.afreecatv.com/api/{}/vods/all?page={}&per_page=60", self.user_id, i);
         let vod_list_xml: Value = CLIENT.get(vod_list_url)
             .send()

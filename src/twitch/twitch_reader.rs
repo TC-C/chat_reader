@@ -6,7 +6,6 @@ use crate::twitch_clip::print_clips_from;
 use crate::tools::get_filter;
 use std::sync::mpsc::{channel, Sender};
 use std::thread::{spawn, JoinHandle};
-use std::collections::VecDeque;
 
 pub fn main() {
     let client_get_thread = spawn(move || TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u"));
@@ -49,7 +48,6 @@ fn get_clips() {
     print_clips_from(&channel, &filter)
 }
 
-
 fn input_channel(client: TwitchClient) {
     let mut channel_name = String::new();
     print!("Input Channel Name >>> ");
@@ -66,7 +64,7 @@ fn input_channel(client: TwitchClient) {
     let filter = get_filter_thread.join().unwrap();
 
 
-    let mut threads: VecDeque<(TwitchVOD, Sender<()>, JoinHandle<()>)> = VecDeque::new();
+    let mut threads: Vec<(TwitchVOD, Sender<()>, JoinHandle<()>)> = Vec::new();
     for vod in vods {
         //The thread must own all the parameters
         let (tx, rx) = channel();
@@ -75,22 +73,17 @@ fn input_channel(client: TwitchClient) {
         let client = client.to_owned();
         let chat_thread = spawn(move || vod_thread.print_chat(&filter, &client, rx));
 
-        threads.push_back((vod, tx, chat_thread));
+        threads.push((vod, tx, chat_thread));
     }
-    loop {
-        match threads.pop_front() {
-            None => { break; }
-            Some(reader) => {
-                let vod = reader.0;
-                let tx = reader.1;
-                let chat_thread = reader.2;
+    for reader in threads {
+        let vod = reader.0;
+        let tx = reader.1;
+        let chat_thread = reader.2;
 
-                println!("\n{} v{}", vod.title, vod.id);
-                println!("{}", vod.m3u8(&client));
-                tx.send(());
-                chat_thread.join();
-            }
-        }
+        println!("\n{} v{}", vod.title, vod.id);
+        println!("{}", vod.m3u8(&client));
+        tx.send(());
+        chat_thread.join();
     }
 }
 
