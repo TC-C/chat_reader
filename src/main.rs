@@ -21,9 +21,35 @@ mod youtube_reader;
 
 mod tools;
 
+
+use std::env;
 use std::io::{stdin, stdout, Write};
+use std::vec::IntoIter;
+use std::process::exit;
+
+fn main_args(mut args: IntoIter<String>) {
+    loop {
+        match args.next() {
+            None => break,
+            Some(arg) => {
+                let arg = arg.as_str();
+                match arg {
+                    "-tc" => twitch_reader::args_channel(&mut args),
+                    &_ => exit(-1)
+                }
+            }
+        }
+    }
+}
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let mut args = args.into_iter();
+    args.next();
+    if !args.len() > 0 {
+        main_args(args);
+        return;
+    }
     let mut platform_name = String::new();
     print!("What platform would you link to pull from (Twitch, AfreecaTV, YouTube)? >>> ");
     stdout()

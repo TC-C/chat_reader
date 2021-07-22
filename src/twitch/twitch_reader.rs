@@ -3,11 +3,15 @@ use crate::twitch_client::TwitchClient;
 use crate::twitch_vod::TwitchVOD;
 use crate::twitch_channel::TwitchChannel;
 use crate::twitch_clip::print_clips_from;
-use crate::tools::get_filter;
+use crate::tools::{get_filter, args_filter};
 use std::sync::mpsc::{channel, Sender};
 use std::thread::{spawn, JoinHandle};
+use std::vec::IntoIter;
+use std::process::exit;
+use regex::Regex;
+use std::num::ParseIntError;
 
-pub fn main() {
+pub(crate) fn main() {
     let client_get_thread = spawn(move || TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u"));
     let mut search_type = String::new();
     print!("Would you like to search through entire Channel, single VOD, or clips? >>> ");
@@ -48,6 +52,34 @@ fn get_clips() {
     print_clips_from(&channel, &filter)
 }
 
+pub(crate) fn args_channel(args: &mut IntoIter<String>) {
+    let client = TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u");
+    let channel_name = match args.next() {
+        None => {
+            eprintln!("No channel declared after `-tc`");
+            exit(-1)
+        }
+        Some(channel_name) => channel_name
+    };
+
+    let has_filter = args_has_filter(args);
+    let mut filter = Regex::new("").unwrap();
+    if has_filter {
+        filter = args_filter(args)
+    }
+    let ch = TwitchChannel::new(&channel_name);
+    let vods = ch.vods(&client);
+
+    display_channel(&client, vods, filter);
+}
+
+fn args_has_filter(args: &mut IntoIter<String>) -> bool {
+    match args.next() {
+        None => false,
+        Some(label) => label.eq_ignore_ascii_case("-f")
+    }
+}
+
 fn input_channel(client: TwitchClient) {
     let mut channel_name = String::new();
     print!("Input Channel Name >>> ");
@@ -63,7 +95,10 @@ fn input_channel(client: TwitchClient) {
     let vods = ch.vods(&client);
     let filter = get_filter_thread.join().unwrap();
 
+    display_channel(&client, vods, filter)
+}
 
+fn display_channel(client: &TwitchClient, vods: Vec<TwitchVOD>, filter: Regex) {
     let mut threads: Vec<(TwitchVOD, Sender<()>, JoinHandle<()>)> = Vec::new();
     for vod in vods {
         //The thread must own all the parameters
@@ -85,6 +120,33 @@ fn input_channel(client: TwitchClient) {
         tx.send(());
         chat_thread.join();
     }
+}
+
+pub(crate) fn args_vod(args: &mut IntoIter<String>) {
+    let client = &TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u");
+    let vod_id = match args.next() {
+        None => {
+            eprintln!("No channel declared after `-tv`");
+            exit(-1)
+        }
+        Some(vod_id) => {
+            match vod_id.parse::<u32>() {
+                Ok(vod_id) => vod_id,
+                Err(_) => {
+                    eprintln!("Invalid VOD ID");
+                    exit(-1)
+                }
+            }
+        }
+    };
+
+    let vod = TwitchVOD::new(vod_id, client);
+    let has_filter = args_has_filter(args);
+    let mut filter = Regex::new("").unwrap();
+    if has_filter {
+        filter = args_filter(args)
+    }
+    vod.print_chat_blocking(&filter, client)
 }
 
 fn input_vod(client: &TwitchClient) {

@@ -1,8 +1,9 @@
 use lazy_static::lazy_static;
 use std::io::{stdout, stdin, Write};
+use std::vec::IntoIter;
 use reqwest::blocking::Client;
 use regex::Regex;
-use std::collections::VecDeque;
+use std::process::exit;
 lazy_static! {pub static ref CLIENT: Client = Client::new();}
 
 pub fn clean_quotes(string: &str) -> String {
@@ -51,6 +52,20 @@ pub fn get_filter() -> Regex {
         .expect("Could not read response for <filter>");
     filter = String::from(filter.trim_end_matches(&['\r', '\n'][..]));
     Regex::new(&format!(r"(?i)({})", filter)).unwrap()
+}
+
+pub fn args_filter(args: &mut IntoIter<String>) -> Regex {
+    let re = match args.next() {
+        None => String::new(),
+        Some(re) => re
+    };
+    match Regex::new(&format!(r"(?i)({})", re)) {
+        Ok(filter) => filter,
+        Err(_) => {
+            eprintln!("Invalid regex pattern: {}", re);
+            exit(-1)
+        }
+    }
 }
 
 pub fn extract_digits(s: &str) -> u32 {

@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use regex::{Regex, Match};
+use regex::Regex;
 use roxmltree::{Document, Node};
 use reqwest::header::COOKIE;
 use std::sync::mpsc::{Receiver, channel};
