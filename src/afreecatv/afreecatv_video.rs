@@ -23,15 +23,15 @@ hESimjmpn4vuuyKPahezPgzUYwUI6aI40vce6AiWkFZDM6314tglYTo0fMpjqJBeAyBlmvEdT7_JGXCA
 -1rTCrwsP3m5a_vTK1UrHmAcRT3H8biTle_u6_pjf8Z0JGLjES_3rzTJ9YNH5UFcZ2FyA0nU2nPReG9wirYCspxG3FoZax7zYkhLcFJWy6j1cVpts2N_5kzybkwQvk03JPVGfS9o0ZP3EeqyRAJAY8g_OX;";
 
 #[derive(Clone)]
-pub struct AfreecaVideo {
-    pub title_no: u32,
+pub(crate) struct AfreecaVideo {
+    pub(crate) title_no: u32,
     station_no: u32,
     bbs_no: u32,
 }
 
 
 impl AfreecaVideo {
-    pub fn new(url: &str) -> AfreecaVideo {
+    pub(crate) fn new(url: &str) -> AfreecaVideo {
         let view_source = CLIENT.get(url)
             .send().unwrap().text().unwrap();
         let title_no = title_no_matcher.find(url)
@@ -63,12 +63,12 @@ impl AfreecaVideo {
     /// Comments will be printed as soon as they are parsed and will not remain in a queue
     ///
     /// This is recommended for single thread use case
-    pub fn print_chat_blocking(&self, filter: &Regex) {
+    pub(crate) fn print_chat_blocking(&self, filter: &Regex) {
         let (tx, rx) = channel();
         tx.send(()); //print immediately
         self.print_chat(&filter, rx)
     }
-    pub fn print_chat(&self, filter: &Regex, rx: Receiver<()>) {
+    pub(crate) fn print_chat(&self, filter: &Regex, rx: Receiver<()>) {
         let xml = CLIENT.get(self.url())
             .header(COOKIE, DUMMY_COOKIE)
             .header("Connection", "keep-alive")

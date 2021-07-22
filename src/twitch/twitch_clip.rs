@@ -3,7 +3,7 @@ use serde_json::Value;
 use crate::twitch_channel::TwitchChannel;
 use crate::tools::{clean_quotes, CLIENT};
 
-pub fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
+pub(crate) fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
     let name = &channel.name;
     let mut cursor = String::new();
     loop {

@@ -5,15 +5,15 @@ use crate::tools::clean_quotes;
 use crate::tools::CLIENT;
 
 
-pub struct TwitchChannel {
-    pub name: String,
+pub(crate) struct TwitchChannel {
+    pub(crate) name: String,
 }
 
 impl TwitchChannel {
     /// Creates a new `TwitchChannel` from an `&str` that represents the `name` of a channel
     ///
     /// A valid name would be "nasa", which can be derived from the channel URL: https://www.twitch.tv/nasa
-    pub fn new(name: &str) -> TwitchChannel {
+    pub(crate) fn new(name: &str) -> TwitchChannel {
         TwitchChannel {
             name: String::from(name)
         }
@@ -47,7 +47,7 @@ impl TwitchChannel {
     /// Returns an list of `TwitchVOD`'s that are associated with a channel
     ///
     /// The max size of the returned`Vec` will be 100, which is the limit for an API query
-    pub fn vods(&self, client: &TwitchClient) -> Vec<TwitchVOD> {
+    pub(crate) fn vods(&self, client: &TwitchClient) -> Vec<TwitchVOD> {
         let id = self.id(client);
         let client_id = &client.id;
         let access_token = &client.access_token;

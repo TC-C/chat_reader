@@ -8,16 +8,16 @@ use std::sync::mpsc::{Receiver, channel};
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
 #[derive(Clone)]
-pub struct TwitchVOD {
-    pub title: String,
-    pub id: u32,
+pub(crate) struct TwitchVOD {
+    pub(crate) title: String,
+    pub(crate) id: u32,
 }
 
 impl TwitchVOD {
     /// Creates a new `TwitchVOD` from a `u32` that represents an ID and an `&str` that represents the title
     ///
     /// The function will not check any values and may result in errors when calling other functions
-    pub fn new_unchecked(id: u32, title: &str) -> TwitchVOD {
+    pub(crate) fn new_unchecked(id: u32, title: &str) -> TwitchVOD {
         TwitchVOD {
             id,
             title: String::from(title),
@@ -26,7 +26,7 @@ impl TwitchVOD {
     /// Creates a new `TwitchVOD` from a `u32` that represents the ID of the VOD
     ///
     /// A valid ID would be `799499623`, which can be derived from the VOD URL: https://www.twitch.tv/videos/799499623
-    pub fn new(id: u32, client: &TwitchClient) -> TwitchVOD {
+    pub(crate) fn new(id: u32, client: &TwitchClient) -> TwitchVOD {
         let data: Value = CLIENT.get(format!("https://api.twitch.tv/helix/videos?id={}", id))
             .bearer_auth(&client.access_token)
             .header("Client-ID", &client.id)
@@ -53,7 +53,7 @@ impl TwitchVOD {
     /// Comments will be printed as soon as they are parsed and will not remain in a queue
     ///
     /// This is recommended for single thread use cases
-    pub fn print_chat_blocking(&self, filter: &Regex, client: &TwitchClient) {
+    pub(crate) fn print_chat_blocking(&self, filter: &Regex, client: &TwitchClient) {
         let (tx, rx) = channel();
         tx.send(()); //print immediately
         self.print_chat(&filter, &client, rx)
@@ -68,7 +68,7 @@ impl TwitchVOD {
     /// The `rx: Receiver<bool>` is used to determine when the comments should be printed out
     ///
     /// By default, the outputs are queued into `comment_queue` and then will be allowed to print only when `rx` receives a boolean from a `Sender<bool>`
-    pub fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<()>) {
+    pub(crate) fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<()>) {
         let mut cursor = String::new();
         let mut comment_queue: Vec<String> = Vec::new();
         let mut waiting_to_print = true;
@@ -114,7 +114,7 @@ impl TwitchVOD {
     /// Requires video ID to be valid
     ///
     /// In special cases, such as for channel trailers, where M3U8's cannot be easily computed, the official VOD link is returned
-    pub fn m3u8(&self, client: &TwitchClient) -> String {
+    pub(crate) fn m3u8(&self, client: &TwitchClient) -> String {
         let vod_info: Value = CLIENT.get(format!("https://api.twitch.tv/v5/videos/{}", self.id))
             .header("Client-ID", &client.id)
             .send()

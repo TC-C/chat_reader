@@ -5,7 +5,7 @@ use crate::tools::get_filter;
 use std::thread::{spawn, JoinHandle};
 use std::sync::mpsc::{channel, Sender};
 
-pub fn main() {
+pub(crate) fn main() {
     let mut search_type = String::new();
     print!("Would you like to search through entire Blog or single Video? >>> ");
     stdout()
@@ -27,7 +27,7 @@ pub fn main() {
     }
 }
 
-pub fn input_vod() {
+pub(crate) fn input_vod() {
     let mut vod_link = String::new();
     print!("Input VOD Link >>> ");
     stdout()
@@ -43,7 +43,7 @@ pub fn input_vod() {
     video.print_chat_blocking(&filter);
 }
 
-pub fn input_blog() {
+pub(crate) fn input_blog() {
     let mut blog_name = String::new();
     print!("Input Blog Name >>> ");
     stdout()

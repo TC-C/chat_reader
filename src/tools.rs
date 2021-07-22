@@ -4,20 +4,20 @@ use std::vec::IntoIter;
 use reqwest::blocking::Client;
 use regex::Regex;
 use std::process::exit;
-lazy_static! {pub static ref CLIENT: Client = Client::new();}
+lazy_static! {pub(crate) static ref CLIENT: Client = Client::new();}
 
-pub fn clean_quotes(string: &str) -> String {
+pub(crate) fn clean_quotes(string: &str) -> String {
     string.trim_start_matches("\"").trim_end_matches("\"").to_string()
 }
 
-pub fn format_time_string(seconds: &str) -> String {
+pub(crate) fn format_time_string(seconds: &str) -> String {
     let seconds: f32 = seconds.parse().unwrap();
     let seconds = seconds as u32;
     format_time(seconds)
 }
 
 /// function to call println! on all `String`s in a Vec whilst emptying it
-pub fn print_queue(comment_queue: &mut Vec<String>) {
+pub(crate) fn print_queue(comment_queue: &mut Vec<String>) {
     let cq = comment_queue.into_iter();
     for comment in cq {
         println!("{}", comment)
@@ -41,7 +41,7 @@ pub fn format_time(seconds: u32) -> String {
     return format!("{}:{}:{}", hours, minutes, seconds);
 }
 
-pub fn get_filter() -> Regex {
+pub(crate) fn get_filter() -> Regex {
     let mut filter = String::new();
     print!("(RegExp) Please enter a phrase you would like to search for >>> ");
     stdout()
@@ -54,7 +54,7 @@ pub fn get_filter() -> Regex {
     Regex::new(&format!(r"(?i)({})", filter)).unwrap()
 }
 
-pub fn args_filter(args: &mut IntoIter<String>) -> Regex {
+pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Regex {
     let re = match args.next() {
         None => String::new(),
         Some(re) => re
@@ -68,7 +68,7 @@ pub fn args_filter(args: &mut IntoIter<String>) -> Regex {
     }
 }
 
-pub fn extract_digits(s: &str) -> u32 {
+pub(crate) fn extract_digits(s: &str) -> u32 {
     let output: String = s.chars().filter(|c| c.is_numeric()).collect();
     output.parse::<u32>().unwrap()
 }

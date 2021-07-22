@@ -4,17 +4,17 @@ use crate::afreecatv_video::AfreecaVideo;
 use std::thread::{spawn, JoinHandle};
 
 #[derive(Clone)]
-pub struct Blog {
+pub(crate) struct Blog {
     user_id: String,
 }
 
 impl Blog {
-    pub fn new(user_id: &str) -> Blog {
+    pub(crate) fn new(user_id: &str) -> Blog {
         Blog {
             user_id: user_id.to_string()
         }
     }
-    pub fn videos(self) -> Vec<AfreecaVideo> {
+    pub(crate) fn videos(self) -> Vec<AfreecaVideo> {
         let vod_list_url = format!("https://bjapi.afreecatv.com/api/{}/vods/all?per_page=60", self.user_id);
         let vod_list_xml: Value = CLIENT.get(vod_list_url)
             .header("Connection", "keep-alive")
