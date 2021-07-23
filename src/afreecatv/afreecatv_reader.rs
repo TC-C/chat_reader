@@ -1,9 +1,5 @@
-use std::io::{stdout, stdin, Write};
-use crate::afreecatv_video::AfreecaVideo;
-use crate::afreecatv_channel::Blog;
-use crate::tools::get_filter;
-use std::thread::{spawn, JoinHandle};
-use std::sync::mpsc::{channel, Sender};
+use std::{io::{stdout, stdin, Write}, thread::{spawn, JoinHandle}, sync::mpsc::{channel, Sender}};
+use crate::{afreecatv_video::AfreecaVideo, afreecatv_channel::Blog, tools::get_filter};
 
 pub(crate) fn main() {
     let mut search_type = String::new();

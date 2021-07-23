@@ -21,11 +21,7 @@ mod youtube_reader;
 
 mod tools;
 
-
-use std::env;
-use std::io::{stdin, stdout, Write};
-use std::vec::IntoIter;
-use std::process::exit;
+use std::{env, io::{stdin, stdout, Write}, vec::IntoIter, process::exit};
 
 fn main_args(mut args: IntoIter<String>) {
     loop {

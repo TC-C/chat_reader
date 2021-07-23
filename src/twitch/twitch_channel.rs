@@ -1,8 +1,5 @@
-use crate::twitch_client::TwitchClient;
 use serde_json::Value;
-use crate::twitch_vod::TwitchVOD;
-use crate::tools::clean_quotes;
-use crate::tools::CLIENT;
+use crate::{twitch_client::TwitchClient, twitch_vod::TwitchVOD, tools::{clean_quotes, CLIENT}};
 
 
 pub(crate) struct TwitchChannel {

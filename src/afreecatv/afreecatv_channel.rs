@@ -1,7 +1,6 @@
-use crate::tools::CLIENT;
 use serde_json::Value;
-use crate::afreecatv_video::AfreecaVideo;
 use std::thread::{spawn, JoinHandle};
+use crate::{afreecatv_video::AfreecaVideo, tools::CLIENT};
 
 #[derive(Clone)]
 pub(crate) struct Blog {

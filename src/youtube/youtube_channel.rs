@@ -1,6 +1,5 @@
 use serde_json::Value;
-use crate::tools::clean_quotes;
-use crate::tools::CLIENT;
+use crate::tools::{clean_quotes, CLIENT};
 
 const KEY: &str = "AIzaSyCOUG9NmlrerQC5OnS3Erbh5K34PobYDQE";
 

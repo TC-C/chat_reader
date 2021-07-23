@@ -1,14 +1,7 @@
-use std::io::{stdin, stdout, Write};
-use crate::twitch_client::TwitchClient;
-use crate::twitch_vod::TwitchVOD;
-use crate::twitch_channel::TwitchChannel;
-use crate::twitch_clip::print_clips_from;
-use crate::tools::{get_filter, args_filter};
-use std::sync::mpsc::{channel, Sender};
-use std::thread::{spawn, JoinHandle};
-use std::vec::IntoIter;
-use std::process::exit;
 use regex::Regex;
+use std::{io::{stdin, stdout, Write}, sync::mpsc::{channel, Sender}, thread::{spawn, JoinHandle}, vec::IntoIter, process::exit};
+use crate::{twitch_client::TwitchClient, twitch_vod::TwitchVOD, twitch_channel::TwitchChannel, twitch_clip::print_clips_from, tools::{get_filter, args_filter}};
+
 pub(crate) fn main() {
     let client_get_thread = spawn(move || TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u"));
     let mut search_type = String::new();

@@ -1,5 +1,5 @@
-use crate::youtube_channel::YouTubeChannel;
 use std::io::{stdin, stdout, Write};
+use crate::youtube_channel::YouTubeChannel;
 
 pub fn main() {
     let mut channel_name = String::new();

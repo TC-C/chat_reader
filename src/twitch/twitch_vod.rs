@@ -1,10 +1,9 @@
 use lazy_static::lazy_static;
 use reqwest::blocking::Client;
 use serde_json::Value;
-use crate::twitch_client::TwitchClient;
-use crate::tools::{clean_quotes, format_time_string, print_queue};
-use regex::Regex;
 use std::sync::mpsc::{Receiver, channel};
+use regex::Regex;
+use crate::{twitch_client::TwitchClient, tools::{clean_quotes, format_time_string, print_queue}};
 lazy_static! {static ref CLIENT: Client = Client::new();}
 
 #[derive(Clone)]

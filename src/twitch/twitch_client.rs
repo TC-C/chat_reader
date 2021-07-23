@@ -1,6 +1,5 @@
 use serde_json::Value;
-use crate::tools::CLIENT;
-use crate::tools::clean_quotes;
+use crate::tools::{clean_quotes, CLIENT};
 
 /// A struct that is meant to be used to assist with API calls made with the Twitch API
 ///
