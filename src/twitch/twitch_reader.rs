@@ -1,5 +1,11 @@
 use regex::Regex;
-use std::{io::{stdin, stdout, Write}, sync::mpsc::{channel, Sender}, thread::{spawn, JoinHandle}, vec::IntoIter, process::exit};
+use std::{
+    io::{stdin, stdout, Write},
+    sync::mpsc::{channel, Sender},
+    thread::{spawn, JoinHandle},
+    vec::IntoIter,
+    process::exit,
+};
 use crate::{twitch_client::TwitchClient, twitch_vod::TwitchVOD, twitch_channel::TwitchChannel, twitch_clip::print_clips_from, tools::{get_filter, args_filter}};
 
 pub(crate) fn main() {

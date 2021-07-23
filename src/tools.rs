@@ -1,7 +1,11 @@
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::blocking::Client;
-use std::{io::{stdout, stdin, Write}, vec::IntoIter, process::exit};
+use std::{
+    io::{stdout, stdin, Write},
+    vec::IntoIter,
+    process::exit,
+};
 lazy_static! {pub(crate) static ref CLIENT: Client = Client::new();}
 
 pub(crate) fn clean_quotes(string: &str) -> String {
