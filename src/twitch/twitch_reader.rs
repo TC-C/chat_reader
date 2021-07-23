@@ -9,8 +9,6 @@ use std::thread::{spawn, JoinHandle};
 use std::vec::IntoIter;
 use std::process::exit;
 use regex::Regex;
-use std::num::ParseIntError;
-
 pub(crate) fn main() {
     let client_get_thread = spawn(move || TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u"));
     let mut search_type = String::new();

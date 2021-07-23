@@ -35,6 +35,7 @@ fn main_args(mut args: IntoIter<String>) {
                 let arg = arg.as_str();
                 match arg {
                     "-tc" => twitch_reader::args_channel(&mut args),
+                    "-tv" => twitch_reader::args_vod(&mut args),
                     &_ => exit(-1)
                 }
             }
@@ -46,7 +47,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     let mut args = args.into_iter();
     args.next();
-    if !args.len() > 0 {
+    if args.len() > 0 {
         main_args(args);
         return;
     }
