@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex, Error};
 use reqwest::blocking::Client;
 use std::{
     io::{stdout, stdin, Write},
@@ -13,7 +13,13 @@ pub(crate) fn clean_quotes(string: &str) -> String {
 }
 
 pub(crate) fn format_time_string(seconds: &str) -> String {
-    let seconds: f32 = seconds.parse().unwrap();
+    let seconds: f32 = match seconds.parse() {
+        Ok(seconds) => seconds,
+        Err(_) => {
+            eprintln!("Could not parse {} as seconds", seconds);
+            exit(-1)
+        }
+    };
     let seconds = seconds as u32;
     format_time(seconds)
 }
@@ -44,16 +50,22 @@ pub fn format_time(seconds: u32) -> String {
 }
 
 pub(crate) fn get_filter() -> Regex {
-    let mut filter = String::new();
+    let mut re = String::new();
     print!("(RegExp) Please enter a phrase you would like to search for >>> ");
     stdout()
         .flush()
         .expect("Could not flush line when preparing for <filter>");
     stdin()
-        .read_line(&mut filter)
+        .read_line(&mut re)
         .expect("Could not read response for <filter>");
-    filter = String::from(filter.trim_end_matches(&['\r', '\n'][..]));
-    Regex::new(&format!(r"(?i)({})", filter)).unwrap()
+    re = String::from(re.trim_end_matches(&['\r', '\n'][..]));
+    match Regex::new(&format!(r"(?i)({})", re)) {
+        Ok(regex) => regex,
+        Err(_) => {
+            eprintln!("'{}' is an invalid regex function", re);
+            exit(-1)
+        }
+    }
 }
 
 pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Regex {
@@ -72,5 +84,11 @@ pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Regex {
 
 pub(crate) fn extract_digits(s: &str) -> u32 {
     let output: String = s.chars().filter(|c| c.is_numeric()).collect();
-    output.parse::<u32>().unwrap()
+    match output.parse::<u32>() {
+        Ok(digits) => digits,
+        Err(_) => {
+            eprintln!("Could not parse {}", s);
+            exit(-1)
+        }
+    }
 }
