@@ -1,9 +1,6 @@
 use serde_json::Value;
 use crate::tools::{clean_quotes, CLIENT};
-use reqwest::blocking::Response;
-use reqwest::Error;
 use std::process::exit;
-use std::io::Read;
 
 /// A struct that is meant to be used to assist with API calls made with the Twitch API
 ///
@@ -23,29 +20,25 @@ impl TwitchClient {
         let client_access_token: Value = match CLIENT.post(format!("https://id.twitch.tv/oauth2/token?grant_type=client_credentials&client_secret={}", client_secret))
             .header("Client-ID", id)
             .send() {
-            Ok(mut post) => match post.json() {
+            Ok(post) => match post.json() {
                 Ok(json) => json,
                 Err(_) => {
-                    let mut response = String::new();
-                    post.read_to_string(&mut response);
-                    eprintln!("Could not parse json: {}", response);
+                    eprintln!("Could not parse JSON");
                     exit(-1)
                 }
-            },
+            }
             Err(_) => {
                 eprintln!("Could not connect to https://id.twitch.tv/");
                 exit(-1);
             }
         };
-        let access_token = clean_quotes(
-            match client_access_token.get("access_token") {
-                None => {
-                    eprintln!("Access Token property could not be found in JSON: {}", client_access_token);
-                    exit(-1)
-                }
-                Some(access_token) => &access_token.to_string()
-            });
-
+        let access_token = match client_access_token.get("access_token") {
+            None => {
+                eprintln!("Access Token property could not be found in JSON: {}", client_access_token);
+                exit(-1)
+            }
+            Some(access_token) => clean_quotes(&access_token.to_string())
+        };
 
         TwitchClient {
             id: String::from(id),
