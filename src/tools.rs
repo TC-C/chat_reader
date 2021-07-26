@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use regex::{Regex, Error};
+use regex::Regex;
 use reqwest::blocking::Client;
 use std::{
     io::{stdout, stdin, Write},

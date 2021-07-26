@@ -5,9 +5,6 @@ use crate::{
     tools::{clean_quotes, CLIENT},
 };
 use std::process::exit;
-use reqwest::blocking::Response;
-use reqwest::Error;
-use std::num::ParseIntError;
 
 
 pub(crate) struct TwitchChannel {

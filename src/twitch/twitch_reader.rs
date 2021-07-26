@@ -20,7 +20,7 @@ pub(crate) fn main() {
         .expect("Could not read response for <search_type>");
     search_type = search_type.trim_end_matches(&['\r', '\n'][..]).to_lowercase();
     let search_type = search_type.as_str();
-    let client = client_get_thread.join().unwrap();
+    let client = client_get_thread.join().unwrap(); //client_get_thread only joins here, so unwrap() is safe
 
     match search_type {
         "vod" => input_vod(&client),
@@ -45,7 +45,7 @@ fn get_clips() {
     let filter_get_thread = spawn(move || get_filter());
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
     let channel = TwitchChannel::new(&channel_name);
-    let filter = filter_get_thread.join().unwrap();
+    let filter = filter_get_thread.join().unwrap(); //filter_get_thread only joins here, so unwrap() is safe
     print_clips_from(&channel, &filter)
 }
 
@@ -60,7 +60,7 @@ pub(crate) fn args_channel(args: &mut IntoIter<String>) {
     };
 
     let has_filter = args_has_filter(args);
-    let mut filter = Regex::new("").unwrap();
+    let mut filter = Regex::new("(.*?)").unwrap(); //This is a valid pattern
     if has_filter {
         filter = args_filter(args)
     }
@@ -139,7 +139,7 @@ pub(crate) fn args_vod(args: &mut IntoIter<String>) {
 
     let vod = TwitchVOD::new(vod_id, client);
     let has_filter = args_has_filter(args);
-    let mut filter = Regex::new("").unwrap();
+    let mut filter = Regex::new("(.*?)").unwrap();
     if has_filter {
         filter = args_filter(args)
     }
