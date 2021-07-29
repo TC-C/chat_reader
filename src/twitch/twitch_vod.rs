@@ -3,11 +3,15 @@ use regex::Regex;
 use reqwest::blocking::Client;
 use serde_json::Value;
 use std::{process::exit, sync::mpsc::{Receiver, channel}};
+use termion::color::{Fg, Reset, Rgb};
 use crate::{
     twitch_client::TwitchClient,
     tools::{clean_quotes, print_queue, format_time_string},
 };
-lazy_static! {static ref CLIENT: Client = Client::new();}
+use crate::tools::hex_to_rgb;
+lazy_static! {
+    static ref CLIENT: Client = Client::new();
+}
 
 #[derive(Clone)]
 pub(crate) struct TwitchVOD {
@@ -150,16 +154,29 @@ impl TwitchVOD {
                         eprintln!("\nCould not find message in comment");
                         exit(-1)
                     }
-                    Some(message) => match message.get("body") {
-                        None => {
-                            eprintln!("\nCould not find body in comment");
-                            exit(-1)
-                        }
-                        Some(body) => clean_quotes(&body.to_string())
-                    }
+                    Some(message) => message
                 };
-                if filter.is_match(&message) {
-                    let comment = format!("[{}][{}]: {}", timestamp, display_name, message);
+                let body = match message.get("body") {
+                    None => {
+                        eprintln!("\nCould not find body in message");
+                        exit(-1)
+                    }
+                    Some(body) => clean_quotes(&body.to_string())
+                };
+                let color = match message.get("user_color") {
+                    None => String::new(),
+                    Some(color) => clean_quotes(&color.to_string())
+                };
+                if filter.is_match(&body) {
+                    let mut comment = String::new();
+                    if color.is_empty() {
+                        comment = format!("[{}][{}]: {}", timestamp, display_name, body);
+                    } else {
+                        comment = format!("[{}][{user_color}{}{reset}]: {}",
+                                          timestamp, display_name, body,
+                                          user_color = Fg(hex_to_rgb(&color)),
+                                          reset = Fg(Reset));
+                    }
                     comment_queue.push(comment)
                 }
                 if waiting_to_print {

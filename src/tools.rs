@@ -6,6 +6,7 @@ use std::{
     vec::IntoIter,
     process::exit,
 };
+use termion::{color, color::Rgb};
 lazy_static! {pub(crate) static ref CLIENT: Client = Client::new();}
 
 pub(crate) fn clean_quotes(string: &str) -> String {
@@ -33,7 +34,16 @@ pub(crate) fn print_queue(comment_queue: &mut Vec<String>) {
     comment_queue.clear()
 }
 
-pub fn format_time(seconds: u32) -> String {
+pub(crate) fn hex_to_rgb(hex: &str) -> Rgb {
+    let hex = hex.trim_start_matches('#');
+    let radix = 16;
+    let r = u8::from_str_radix(&hex[0..2], radix).unwrap();
+    let g = u8::from_str_radix(&hex[2..4], radix).unwrap();
+    let b = u8::from_str_radix(&hex[4..6], radix).unwrap();
+    color::Rgb(r, g, b)
+}
+
+pub(crate) fn format_time(seconds: u32) -> String {
     let mut hours = (seconds / (60 * 60)).to_string();
     if hours.len() == 1 {
         hours = format!("0{}", hours);
