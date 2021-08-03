@@ -104,13 +104,7 @@ impl TwitchChannel {
                 eprintln!("\nUnable to retrieve channel vod data list!");
                 exit(-1)
             }
-            Some(data) => match data.as_array() {
-                None => {
-                    eprintln!("\nChannel vod data could not be parsed as an array!");
-                    exit(-1)
-                }
-                Some(vec) => vec
-            }
+            Some(data) => data.as_array().unwrap()
         };
         let mut vods: Vec<TwitchVOD> = Vec::with_capacity(vod_data.len());
         for vod in vod_data {
@@ -121,13 +115,7 @@ impl TwitchChannel {
                 }
                 Some(id) => {
                     let id = clean_quotes(&id.to_string());
-                    match id.parse::<u32>() {
-                        Ok(id) => id,
-                        Err(_) => {
-                            eprintln!("\nCould not parse '{}'", id);
-                            exit(-1)
-                        }
-                    }
+                    id.parse::<u32>().unwrap()
                 }
             };
             let title = &match vod.get("title") {
