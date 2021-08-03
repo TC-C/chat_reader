@@ -25,7 +25,7 @@ pub(crate) fn main() {
     match search_type {
         "vod" => input_vod(&client),
         "channel" => input_channel(client),
-        "clips" => get_clips(),
+        "clips" => get_clips(client),
         _ => {
             eprintln!("\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]", search_type);
             main()
@@ -33,7 +33,7 @@ pub(crate) fn main() {
     }
 }
 
-fn get_clips() {
+fn get_clips(client: TwitchClient) {
     let mut channel_name = String::new();
     print!("Input Channel Name >>> ");
     stdout()
@@ -46,7 +46,7 @@ fn get_clips() {
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
     let channel = TwitchChannel::new(&channel_name);
     let filter = filter_get_thread.join().unwrap(); //filter_get_thread only joins here, so unwrap() is safe
-    print_clips_from(&channel, &filter)
+    print_clips_from(&channel, &filter, &client);
 }
 
 pub(crate) fn args_channel(args: &mut IntoIter<String>) {

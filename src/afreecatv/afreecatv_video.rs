@@ -10,7 +10,7 @@ lazy_static! {
 	static ref bbs_no_matcher: Regex = Regex::new("nBbsNo=[0-9]{8}").unwrap();
 	static ref station_no_matcher: Regex = Regex::new("nStationNo=[0-9]{8}").unwrap();
 	//working on stbbs info page
-	static ref row_key_matcher: Regex = Regex::new("key=\".*\">").unwrap();
+	static ref row_key_matcher: Regex = Regex::new(r#"key=".*">"#).unwrap();
 	static ref row_time_matcher: Regex = Regex::new(r#"file duration=".*" "#).unwrap();
 }
 //Dummy account for accessing age restricted VODs
@@ -85,7 +85,11 @@ impl AfreecaVideo {
                 Some(s) => s,
                 None => break
             };
-            let row_key = row_key_regex.as_str()[5..34].to_string();
+            let row_key = row_key_regex.as_str();
+            if row_key.len() < 8 {
+                continue;
+            }
+            let row_key = row_key[5..34].to_string();
             let row_time = match row_time_iterator.next() {
                 None => continue,
                 Some(time) => extract_digits(time.as_str())

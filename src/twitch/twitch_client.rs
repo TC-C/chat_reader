@@ -12,6 +12,8 @@ pub(crate) struct TwitchClient {
 }
 
 
+
+
 impl TwitchClient {
     /// Creates a new `TwitchClient` from 2 `&str`s that represent a Client-ID and Client-Secret, respectively
     ///
