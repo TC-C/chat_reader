@@ -13,7 +13,7 @@ pub(crate) fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
         let request = "[{\"operationName\":\"ClipsCards__User\",\"variables\":{\"login\":\"".to_owned() + name + "\",\"limit\":20,\"criteria\":{\"filter\":\"ALL_TIME\"}" + &cursor + "},\"extensions\":{\"persistedQuery\":{\"version\":1,\"sha256Hash\":\"b73ad2bfaecfd30a9e6c28fada15bd97032c83ec77a0440766a56fe0bd632777\"}}}]";
         let response: Value = CLIENT.post("https://gql.twitch.tv/gql")
             .header("Client-Id", "kimne78kx3ncx6brgo4mv6wki5h1ko")
-            .header("Authorization", "OAuth hfcm528b89m5eyturgicl5k6jpx2cb")
+            .bearer_auth("hfcm528b89m5eyturgicl5k6jpx2cb")
             .header("Connection", "keep-alive")
             .body(request)
             .send()
