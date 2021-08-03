@@ -45,10 +45,10 @@ impl TwitchClient {
             access_token,
         }
     }
-    pub(crate) fn new_unchecked(id: &str, access_token: &str) -> TwitchClient{
-        TwitchClient{
+    pub(crate) fn new_unchecked(id: &str, access_token: &str) -> TwitchClient {
+        TwitchClient {
             id: String::from(id),
-            access_token: String::from(access_token)
+            access_token: String::from(access_token),
         }
     }
 }

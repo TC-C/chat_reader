@@ -9,7 +9,7 @@ use std::{
 use crate::{twitch_client::TwitchClient, twitch_vod::TwitchVOD, twitch_channel::TwitchChannel, twitch_clip::print_clips_from, tools::{get_filter, args_filter}};
 
 pub(crate) fn main() {
-    let client_get_thread = spawn(move || TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u"));
+    let client_get_thread = spawn(move || TwitchClient::new_unchecked("kimne78kx3ncx6brgo4mv6wki5h1ko", "hfcm528b89m5eyturgicl5k6jpx2cb"));
     let mut search_type = String::new();
     print!("Would you like to search through entire Channel, single VOD, or clips? >>> ");
     stdout()
@@ -50,7 +50,7 @@ fn get_clips() {
 }
 
 pub(crate) fn args_channel(args: &mut IntoIter<String>) {
-    let client = TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u");
+    let client = TwitchClient::new_unchecked("kimne78kx3ncx6brgo4mv6wki5h1ko", "hfcm528b89m5eyturgicl5k6jpx2cb");
     let channel_name = match args.next() {
         None => {
             eprintln!("No channel declared after `-tc`");
