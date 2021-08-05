@@ -37,7 +37,10 @@ fn main_args(mut args: IntoIter<String>) {
                 match arg {
                     "-tc" => twitch_reader::args_channel(&mut args),
                     "-tv" => twitch_reader::args_vod(&mut args),
-                    &_ => exit(-1)
+                    &_ => {
+                        eprintln!("'{}' was an unrecognized argument, expected [-tc, -tv]", arg);
+                        exit(-1)
+                    }
                 }
             }
         }
@@ -45,10 +48,10 @@ fn main_args(mut args: IntoIter<String>) {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let mut args = args.into_iter();
-    args.next();
-    if args.len() > 0 {
+    if env::args().len() > 1 {
+        let args: Vec<String> = env::args().collect();
+        let mut args = args.into_iter();
+        args.next();
         main_args(args);
         return;
     }
@@ -56,10 +59,10 @@ fn main() {
     print!("What platform would you link to pull from (Twitch, AfreecaTV, YouTube)? >>> ");
     stdout()
         .flush()
-        .expect("Could not flush line when preparing for <vod_link>");
+        .unwrap();
     stdin()
         .read_line(&mut platform_name)
-        .expect("Could not read response for <vod_link>");
+        .unwrap();
     platform_name = platform_name.trim_end_matches(&['\r', '\n'][..]).to_lowercase();
     let platform_name = platform_name.as_str();
 

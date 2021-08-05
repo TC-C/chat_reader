@@ -7,6 +7,7 @@ use std::{
     process::exit,
 };
 use crate::{twitch_client::TwitchClient, twitch_vod::TwitchVOD, twitch_channel::TwitchChannel, twitch_clip::print_clips_from, tools::{get_filter, args_filter}};
+use crate::tools::is_valid_username;
 
 pub(crate) fn main() {
     let client_get_thread = spawn(move || TwitchClient::new_unchecked("kimne78kx3ncx6brgo4mv6wki5h1ko", "hfcm528b89m5eyturgicl5k6jpx2cb"));
@@ -56,7 +57,13 @@ pub(crate) fn args_channel(args: &mut IntoIter<String>) {
             eprintln!("No channel declared after `-tc`");
             exit(-1)
         }
-        Some(channel_name) => channel_name
+        Some(channel_name) => {
+            if !is_valid_username(&channel_name) {
+                eprintln!("Channel name: {} is an invalid username", channel_name);
+                exit(-1)
+            }
+            channel_name
+        }
     };
 
     let has_filter = args_has_filter(args);
@@ -87,6 +94,11 @@ fn input_channel(client: TwitchClient) {
         .read_line(&mut channel_name)
         .expect("Could not read response for <channel_name>");
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
+    if !is_valid_username(&channel_name) {
+        eprintln!("Channel name: {} is an invalid username\n", channel_name);
+        input_channel(client);
+        return;
+    }
     let get_filter_thread = spawn(move || get_filter());
     let ch = TwitchChannel::new(&channel_name);
     let vods = ch.vods(&client);
@@ -123,14 +135,14 @@ pub(crate) fn args_vod(args: &mut IntoIter<String>) {
     let client = &TwitchClient::new("cuwhphy3xzy01xn60rddmr57x8hzc6", "9milc7hacuyl8eg5cdpgllbdqpze9u");
     let vod_id = match args.next() {
         None => {
-            eprintln!("No channel declared after `-tv`");
+            eprintln!("No VOD ID declared after `-tv`");
             exit(-1)
         }
         Some(vod_id) => {
             match vod_id.parse::<u32>() {
                 Ok(vod_id) => vod_id,
                 Err(_) => {
-                    eprintln!("Invalid VOD ID");
+                    eprintln!("VOD ID may only be numeric characters");
                     exit(-1)
                 }
             }

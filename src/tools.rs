@@ -1,13 +1,15 @@
 use lazy_static::lazy_static;
 use regex::Regex;
-use reqwest::blocking::Client;
 use std::{
     io::{stdout, stdin, Write},
     vec::IntoIter,
     process::exit,
 };
 use termion::{color, color::Rgb};
-lazy_static! {pub(crate) static ref CLIENT: Client = Client::new();}
+lazy_static! {
+    pub(crate) static ref CLIENT: Client = Client::new();
+    static ref USERNAME_VALIDATE: Regex = Regex::new(r#"^[a-zA-Z0-9][\w]{3,24}$"#).unwrap();
+}
 
 pub(crate) fn clean_quotes(string: &str) -> String {
     string.trim_start_matches("\"").trim_end_matches("\"").to_string()
@@ -36,10 +38,10 @@ pub(crate) fn print_queue(comment_queue: &mut Vec<String>) {
 
 pub(crate) fn hex_to_rgb(hex: &str) -> Rgb {
     let hex = hex.trim_start_matches('#');
-    let radix = 16;
-    let r = u8::from_str_radix(&hex[0..2], radix).unwrap();
-    let g = u8::from_str_radix(&hex[2..4], radix).unwrap();
-    let b = u8::from_str_radix(&hex[4..6], radix).unwrap();
+    const RADIX: u32 = 16;
+    let r = u8::from_str_radix(&hex[0..2], RADIX).unwrap();
+    let g = u8::from_str_radix(&hex[2..4], RADIX).unwrap();
+    let b = u8::from_str_radix(&hex[4..6], RADIX).unwrap();
     color::Rgb(r, g, b)
 }
 
@@ -76,6 +78,10 @@ pub(crate) fn get_filter() -> Regex {
             exit(-1)
         }
     }
+}
+
+pub(crate) fn is_valid_username(username: &str) -> bool {
+    USERNAME_VALIDATE.is_match(username)
 }
 
 pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Regex {
