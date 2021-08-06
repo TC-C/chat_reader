@@ -43,12 +43,7 @@ impl TwitchChannel {
         match clean_quotes(
             &json_result
                 .get("data")
-                .unwrap_or_else(|| {
-                    panic!(
-                        "\nUnable to retrieve channel data! Does '{}' have any symbols?",
-                        &self.name
-                    )
-                })
+                .unwrap_or_else(|| panic!("{}", json_result))
                 .get(0)
                 .unwrap_or_else(|| panic!("\nNo channel was found with the name: '{}'", &self.name))
                 .get("id")

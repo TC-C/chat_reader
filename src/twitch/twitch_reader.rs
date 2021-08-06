@@ -19,7 +19,7 @@ pub(crate) fn main() {
     let client_get_thread = spawn(move || {
         TwitchClient::new_unchecked(
             "kimne78kx3ncx6brgo4mv6wki5h1ko",
-            "hfcm528b89m5eyturgicl5k6jpx2cb",
+            "e5iag6itee2k2j2xwqxyfwebo0yrcg",
         )
     });
     let mut search_type = String::new();
@@ -154,7 +154,7 @@ fn display_channel(client: &TwitchClient, vods: Vec<TwitchVOD>, filter: Regex) {
 
         println!("\n{} v{}", vod.title, vod.id);
         println!("{}", vod.m3u8(client));
-        tx.send(()).unwrap();
+        tx.send(());
         chat_thread.join().unwrap();
     }
 }
