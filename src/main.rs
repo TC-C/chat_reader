@@ -6,8 +6,6 @@ mod afreecatv_reader;
 mod afreecatv_video;
 #[path = "twitch/twitch_channel.rs"]
 mod twitch_channel;
-#[path = "twitch/twitch_client.rs"]
-mod twitch_client;
 #[path = "twitch/twitch_clip.rs"]
 mod twitch_clip;
 #[path = "twitch/twitch_reader.rs"]

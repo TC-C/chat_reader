@@ -1,11 +1,10 @@
+use serde_json::Value;
+
 use crate::tools::CLIENT_ID;
 use crate::{
     tools::{clean_quotes, CLIENT},
-    twitch_client::TwitchClient,
     twitch_vod::TwitchVOD,
 };
-use serde_json::Value;
-use termion::color::{Fg, Red, Reset};
 
 pub(crate) struct TwitchChannel {
     pub(crate) name: String,
@@ -20,17 +19,34 @@ impl TwitchChannel {
             name: String::from(name),
         }
     }
-    /// Returns the Channel ID of a `TwitchChannel`
-    ///```
-    /// let nasa_channel = TwitchChannel::new("NASA");
-    /// assert!(nasa_channel.id(twitch_client), 151920918)
-    /// ```
-    fn id(&self) -> u64 {
-        let request = r#"[{"operationName":"ChannelRoot_AboutPanel","variables":{"channelLogin":""#
+
+    /// Returns an list of `TwitchVOD`'s that are associated with a channel
+    ///
+    /// The max size of the returned `Vec<TwitchVOD>` will be 100, which is the limit for a single API query
+
+    pub(crate) fn vods(&self) -> Vec<TwitchVOD> {
+        let request = r#"[
+   {
+      "operationName":"FilterableVideoTower_Videos",
+      "variables":{
+         "limit":100,
+         "channelOwnerLogin":""#
             .to_owned()
             + &self.name
-            + r#""},"extensions":{"persistedQuery":{"version":1,"sha256Hash":"6d25b3692d788e7a251aa1febf74f5cafb1a917142abd743fe1f65329404e07f"}}}]"#;
-        let json_result: Value = CLIENT
+            + r#"",
+         "broadcastType":null,
+         "videoSort":"TIME",
+         "cursor":""
+      },
+      "extensions":{
+         "persistedQuery":{
+            "version":1,
+            "sha256Hash":"a937f1d22e269e39a03b509f65a7490f9fc247d7f83d6ac1421523e3b68042cb"
+         }
+      }
+   }
+]"#;
+        let data: Value = CLIENT
             .post("https://gql.twitch.tv/gql")
             .header("Client-Id", CLIENT_ID)
             .body(request)
@@ -38,73 +54,30 @@ impl TwitchChannel {
             .unwrap()
             .json()
             .unwrap();
-        let id = clean_quotes(
-            &json_result
-                .get(0)
-                .unwrap()
-                .get("data")
-                .unwrap()
-                .get("user")
-                .unwrap()
-                .get("channel")
-                .unwrap_or_else(|| panic!("This channel does not exist"))
-                .get("id")
-                .unwrap()
-                .to_string(),
-        );
-        id.parse::<u64>().unwrap()
-    }
-
-    /// Returns an list of `TwitchVOD`'s that are associated with a channel
-    ///
-    /// The max size of the returned `Vec<TwitchVOD>` will be 100, which is the limit for an API query
-    pub(crate) fn vods(&self, client: &TwitchClient) -> Vec<TwitchVOD> {
-        let id = self.id();
-        let client_id = CLIENT_ID;
-        let access_token = &client.access_token;
-
-        let data: Value = match CLIENT
-            .get(format!(
-                "https://api.twitch.tv/helix/videos?user_id={}&first=100",
-                id
-            ))
-            .bearer_auth(access_token)
-            .header("Client-ID", client_id)
-            .send()
-        {
-            Ok(get) => match get.json::<Value>() {
-                Ok(json) => json,
-                Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
-            },
-            Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
-        };
         let vod_data = data
+            .get(0)
+            .unwrap()
             .get("data")
-            .unwrap_or_else(|| {
-                dbg!(&data);
-                panic!("\nUnable to retrieve channel vod data list!");
-            })
+            .unwrap()
+            .get("user")
+            .unwrap()
+            .get("videos")
+            .unwrap_or_else(|| panic!("This user does not exist"))
+            .get("edges")
+            .unwrap()
             .as_array()
-            .unwrap_or_else(|| panic!("\nChannel data could not be parsed as an array"));
-        let mut vods: Vec<TwitchVOD> = Vec::with_capacity(vod_data.len());
+            .unwrap();
+        let mut vods = Vec::with_capacity(vod_data.len());
         for vod in vod_data {
-            let vod_id = match clean_quotes(
-                &vod.get("id")
-                    .unwrap_or_else(|| panic!("\nCould not find vod id in data"))
-                    .to_string(),
-            )
-            .parse::<u32>()
-            {
-                Ok(id) => id,
-                Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
-            };
-            let title = clean_quotes(
-                &vod.get("title")
-                    .unwrap_or_else(|| panic!("\nCould not find vod title in data"))
-                    .to_string(),
-            );
-            let vod = TwitchVOD::new_unchecked(vod_id, &title);
-            vods.push(vod);
+            let vod = vod.get("node").unwrap();
+            let id = clean_quotes(&vod.get("id").unwrap().to_string())
+                .parse::<u32>()
+                .unwrap();
+            let title = clean_quotes(&vod.get("title").unwrap().to_string());
+            let animated_preview_url =
+                clean_quotes(&vod.get("animatedPreviewURL").unwrap().to_string());
+            let v = TwitchVOD::new_unchecked(id, title, animated_preview_url);
+            vods.push(v);
         }
         vods
     }

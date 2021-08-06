@@ -1,8 +1,4 @@
-use crate::tools::hex_to_rgb;
-use crate::{
-    tools::{clean_quotes, format_time_string, print_queue},
-    twitch_client::TwitchClient,
-};
+use crate::tools::{clean_quotes, format_time_string, hex_to_rgb, print_queue, CLIENT_ID};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::blocking::Client;
@@ -17,57 +13,80 @@ lazy_static! {
 pub(crate) struct TwitchVOD {
     pub(crate) title: String,
     pub(crate) id: u32,
+    animated_preview_url: String,
 }
 
 impl TwitchVOD {
     /// Creates a new `TwitchVOD` from a `u32` that represents an ID and an `&str` that represents the title
     ///
     /// The function will not check any values and may result in errors when calling other functions
-    pub(crate) fn new_unchecked(id: u32, title: &str) -> TwitchVOD {
+    pub(crate) fn new_unchecked(id: u32, title: String, animated_preview_url: String) -> TwitchVOD {
         TwitchVOD {
             id,
-            title: String::from(title),
+            title,
+            animated_preview_url,
         }
     }
     /// Creates a new `TwitchVOD` from a `u32` that represents the ID of the VOD
     ///
     /// A valid ID would be `799499623`, which can be derived from the VOD URL: https://www.twitch.tv/videos/799499623
-    pub(crate) fn new(id: u32, client: &TwitchClient) -> TwitchVOD {
-        let data: Value = match CLIENT
-            .get(format!("https://api.twitch.tv/helix/videos?id={}", id))
-            .bearer_auth(&client.access_token)
-            .header("Client-ID", &client.id)
+    pub(crate) fn new(id: u32) -> TwitchVOD {
+        let request = r#"[{
+      "operationName":"ComscoreStreamingQuery",
+      "variables":{
+         "channel":"",
+         "clipSlug":"",
+         "isClip":false,
+         "isLive":false,
+         "isVodOrCollection":true,
+         "vodID":""#
+            .to_owned()
+            + &id.to_string()
+            + r#""
+      },
+      "extensions":{
+         "persistedQuery":{
+            "version":1,
+            "sha256Hash":"e1edae8122517d013405f237ffcc124515dc6ded82480a88daef69c83b53ac01"
+         }
+      }
+   }]"#;
+        let data: Value = CLIENT
+            .post("https://gql.twitch.tv/gql")
+            .header("Client-Id", CLIENT_ID)
+            .body(request)
             .send()
-        {
-            Ok(get) => match get.json() {
-                Ok(json) => json,
-                Err(e) => {
-                    panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset));
-                }
-            },
-            Err(e) => {
-                panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset));
-            }
-        };
-        let title = data
-            .get("data")
-            .unwrap_or_else(|| panic!("\nThe VOD ID {} could not be found", id))
-            .get(0)
-            .unwrap_or_else(|| panic!("\nVOD Data is an empty array"))
-            .get("title")
-            .unwrap_or_else(|| panic!("\nCould not find title in data"))
-            .to_string();
-        TwitchVOD { title, id }
+            .unwrap()
+            .json()
+            .unwrap();
+        //dbg!(&data);
+        let title = clean_quotes(
+            &data
+                .get(0)
+                .unwrap()
+                .get("data")
+                .unwrap()
+                .get("video")
+                .unwrap()
+                .get("title")
+                .unwrap()
+                .to_string(),
+        );
+        TwitchVOD {
+            title,
+            id,
+            animated_preview_url: String::new(),
+        }
     }
     /// Identical function to `twitch_vod::print_chat()` except that no Receiver<()> is required.
     ///
     /// Comments will be printed as soon as they are parsed and will not remain in a queue
     ///
     /// This is recommended for single thread use cases
-    pub(crate) fn print_chat_blocking(&self, filter: &Regex, client: &TwitchClient) {
+    pub(crate) fn print_chat_blocking(&self, filter: &Regex) {
         let (tx, rx) = channel();
         tx.send(()).unwrap(); //print immediately
-        self.print_chat(filter, client, rx)
+        self.print_chat(filter, rx)
     }
 
     /// Prints the chat to console from an individual `TwitchVOD`
@@ -79,7 +98,7 @@ impl TwitchVOD {
     /// The `rx: Receiver<bool>` is used to determine when the comments should be printed out
     ///
     /// By default, the outputs are queued into `comment_queue` and then will be allowed to print only when `rx` receives a boolean from a `Sender<bool>`
-    pub(crate) fn print_chat(&self, filter: &Regex, client: &TwitchClient, rx: Receiver<()>) {
+    pub(crate) fn print_chat(&self, filter: &Regex, rx: Receiver<()>) {
         let mut cursor = String::new();
         let mut comment_queue: Vec<String> = Vec::new();
         let mut waiting_to_print = true;
@@ -89,7 +108,7 @@ impl TwitchVOD {
                     "https://api.twitch.tv/v5/videos/{}/comments?cursor={}",
                     self.id, cursor
                 ))
-                .header("Client-ID", &client.id)
+                .header("Client-ID", CLIENT_ID)
                 .header("Connection", "keep-alive")
                 .send()
             {
@@ -182,37 +201,92 @@ impl TwitchVOD {
     /// Requires video ID to be valid
     ///
     /// In special cases, such as for channel trailers, where M3U8's cannot be easily computed, the official VOD link is returned
-    pub(crate) fn m3u8(&self, client: &TwitchClient) -> String {
-        let vod_info: Value = match CLIENT
-            .get(format!("https://api.twitch.tv/v5/videos/{}", self.id))
-            .header("Client-ID", &client.id)
-            .send()
-        {
-            Ok(get) => get
+    pub(crate) fn m3u8(&self) -> String {
+        let mut preview_url = (&self.animated_preview_url).to_owned();
+        if preview_url.is_empty() {
+            let request = r#"[{
+      "operationName":"VideoPlayer_VODSeekbarPreviewVideo",
+      "variables":{
+         "includePrivate":false,
+         "videoID":""#
+                .to_owned()
+                + &self.id.to_string()
+                + r#""
+      },
+      "extensions":{
+         "persistedQuery":{
+            "version":1,
+            "sha256Hash":"07e99e4d56c5a7c67117a154777b0baf85a5ffefa393b213f4bc712ccaf85dd6"
+         }
+      }
+   }]"#;
+            let data: Value = CLIENT
+                .post("https://gql.twitch.tv/gql")
+                .header("Client-Id", CLIENT_ID)
+                .body(request)
+                .send()
+                .unwrap()
                 .json()
-                .unwrap_or_else(|_| panic!("\nCould not parse JSON")),
-            Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
-        };
-        let preview_url = vod_info
-            .get("animated_preview_url")
-            .unwrap_or_else(|| {
-                panic!("\nCould not find animated_preview_url in vod_info, possibly invalid VOD ID")
-            })
-            .to_string();
+                .unwrap();
+            preview_url = clean_quotes(
+                &data
+                    .get(0)
+                    .unwrap()
+                    .get("data")
+                    .unwrap()
+                    .get("video")
+                    .unwrap()
+                    .get("seekPreviewsURL")
+                    .unwrap()
+                    .to_string(),
+            );
+        }
         let chunked_index = preview_url
             .find("storyboards")
             .unwrap_or_else(|| panic!("\n'storyboards' was not found in the URL"));
-        let domain_url = preview_url[1..chunked_index].to_owned() + "chunked/";
+        let domain_url = preview_url[..chunked_index].to_owned() + "chunked/";
+        let request = r#"[
+   {
+      "operationName":"VideoMetadata",
+      "variables":{
+         "channelLogin":"",
+         "videoID":""#
+            .to_owned()
+            + &self.id.to_string()
+            + r#""
+      },
+      "extensions":{
+         "persistedQuery":{
+            "version":1,
+            "sha256Hash":"226edb3e692509f727fd56821f5653c05740242c82b0388883e0c0e75dcbf687"
+         }
+      }
+   }
+]"#;
+        let metadata: Value = CLIENT
+            .post("https://gql.twitch.tv/gql")
+            .header("Client-Id", CLIENT_ID)
+            .body(request)
+            .send()
+            .unwrap()
+            .json()
+            .unwrap();
         let vod_type = clean_quotes(
-            &vod_info
-                .get("broadcast_type")
-                .unwrap_or_else(|| panic!("\n'storyboards' was not found in the URL"))
+            &metadata
+                .get(0)
+                .unwrap()
+                .get("data")
+                .unwrap()
+                .get("video")
+                .unwrap()
+                .get("broadcastType")
+                .unwrap()
                 .to_string(),
         );
         let vod_type = vod_type.as_str();
         match vod_type {
-            "highlight" => format!("{}highlight-{}.m3u8", domain_url, self.id),
-            "archive" => format!("{}index-dvr.m3u8", domain_url),
+            "HIGHLIGHT" => format!("{}highlight-{}.m3u8", domain_url, self.id),
+            "ARCHIVE" => format!("{}index-dvr.m3u8", domain_url),
             _ => format!("https://twitch.tv/videos/{}", self.id),
         }
     }
