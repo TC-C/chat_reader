@@ -1,13 +1,10 @@
+use crate::{afreecatv_channel::Blog, afreecatv_video::AfreecaVideo, tools::get_filter};
 use std::{
-    io::{stdout, stdin, Write},
-    thread::{spawn, JoinHandle},
+    io::{stdin, stdout, Write},
     sync::mpsc::{channel, Sender},
+    thread::{spawn, JoinHandle},
 };
-use crate::{
-    afreecatv_video::AfreecaVideo,
-    afreecatv_channel::Blog,
-    tools::get_filter,
-};
+use termion::color::{Fg, Red, Reset};
 
 pub(crate) fn main() {
     let mut search_type = String::new();
@@ -18,14 +15,19 @@ pub(crate) fn main() {
     stdin()
         .read_line(&mut search_type)
         .expect("Could not read response for <search_type>");
-    search_type = search_type.trim_end_matches(&['\r', '\n'][..]).to_lowercase();
+    search_type = search_type
+        .trim_end_matches(&['\r', '\n'][..])
+        .to_lowercase();
     let search_type = search_type.as_str();
 
     match search_type {
         "video" => input_vod(),
         "blog" => input_blog(),
         _ => {
-            eprintln!("\n'{}' was an unexpected response\nPlease choose between [Blog, Video]\n", search_type);
+            eprintln!(
+                "\n'{}' was an unexpected response\nPlease choose between [Blog, Video]\n",
+                search_type
+            );
             main()
         }
     }
@@ -42,7 +44,10 @@ pub(crate) fn input_vod() {
         .expect("Could not read response for <vod_link>");
     vod_link = String::from(vod_link.trim_end_matches(&['\r', '\n'][..]));
     let video_get_thread = spawn(move || AfreecaVideo::new(&vod_link));
-    let filter = get_filter();
+    let filter = match get_filter() {
+        Ok(filter) => filter,
+        Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+    };
     let video = video_get_thread.join().unwrap();
     video.print_chat_blocking(&filter);
 }
@@ -62,7 +67,10 @@ pub(crate) fn input_blog() {
         blog.videos()
     });
 
-    let filter = get_filter();
+    let filter = match get_filter() {
+        Ok(filter) => filter,
+        Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+    };
     let videos = videos_get_thread.join().unwrap();
 
     let mut threads: Vec<(AfreecaVideo, Sender<()>, JoinHandle<()>)> = Vec::new();
@@ -79,7 +87,7 @@ pub(crate) fn input_blog() {
         let chat_thread = reader.2;
 
         println!("\nWorking on: {}", video.title_no);
-        tx.send(());
-        chat_thread.join();
+        tx.send(()).unwrap();
+        chat_thread.join().unwrap();
     }
 }

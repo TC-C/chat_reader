@@ -1,9 +1,10 @@
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Error, Regex};
+use reqwest::blocking::Client;
+use std::num::{ParseFloatError, ParseIntError};
 use std::{
-    io::{stdout, stdin, Write},
+    io::{stdin, stdout, Write},
     vec::IntoIter,
-    process::exit,
 };
 use termion::{color, color::Rgb};
 lazy_static! {
@@ -11,38 +12,45 @@ lazy_static! {
     static ref USERNAME_VALIDATE: Regex = Regex::new(r#"^[a-zA-Z0-9][\w]{3,24}$"#).unwrap();
 }
 
-pub(crate) fn clean_quotes(string: &str) -> String {
-    string.trim_start_matches("\"").trim_end_matches("\"").to_string()
+pub(crate) fn clean_quotes(str: &str) -> String {
+    str.trim_start_matches('"')
+        .trim_end_matches('"')
+        .to_string()
 }
 
-pub(crate) fn format_time_string(seconds: &str) -> String {
+pub(crate) fn format_time_string(seconds: &str) -> Result<String, ParseFloatError> {
     let seconds: f32 = match seconds.parse() {
         Ok(seconds) => seconds,
-        Err(_) => {
-            eprintln!("Could not parse {} as seconds", seconds);
-            exit(-1)
-        }
+        Err(e) => return Err(e),
     };
     let seconds = seconds as u32;
-    format_time(seconds)
+    Ok(format_time(seconds))
 }
 
-/// function to call println! on all `String`s in a Vec whilst emptying it
+/// Function to call println! on all `String`s in a Vec whilst emptying it
 pub(crate) fn print_queue(comment_queue: &mut Vec<String>) {
-    let cq = comment_queue.into_iter();
-    for comment in cq {
+    for comment in comment_queue.iter_mut() {
         println!("{}", comment)
     }
     comment_queue.clear()
 }
 
-pub(crate) fn hex_to_rgb(hex: &str) -> Rgb {
+pub(crate) fn hex_to_rgb(hex: &str) -> Result<Rgb, ParseIntError> {
     let hex = hex.trim_start_matches('#');
     const RADIX: u32 = 16;
-    let r = u8::from_str_radix(&hex[0..2], RADIX).unwrap();
-    let g = u8::from_str_radix(&hex[2..4], RADIX).unwrap();
-    let b = u8::from_str_radix(&hex[4..6], RADIX).unwrap();
-    color::Rgb(r, g, b)
+    let r = match u8::from_str_radix(&hex[0..2], RADIX) {
+        Ok(r) => r,
+        Err(e) => return Err(e),
+    };
+    let g = match u8::from_str_radix(&hex[2..4], RADIX) {
+        Ok(g) => g,
+        Err(e) => return Err(e),
+    };
+    let b = match u8::from_str_radix(&hex[4..6], RADIX) {
+        Ok(b) => b,
+        Err(e) => return Err(e),
+    };
+    Ok(color::Rgb(r, g, b))
 }
 
 pub(crate) fn format_time(seconds: u32) -> String {
@@ -61,7 +69,7 @@ pub(crate) fn format_time(seconds: u32) -> String {
     return format!("{}:{}:{}", hours, minutes, seconds);
 }
 
-pub(crate) fn get_filter() -> Regex {
+pub(crate) fn get_filter() -> Result<Regex, Error> {
     let mut re = String::new();
     print!("(RegExp) Please enter a phrase you would like to search for >>> ");
     stdout()
@@ -71,40 +79,19 @@ pub(crate) fn get_filter() -> Regex {
         .read_line(&mut re)
         .expect("Could not read response for <filter>");
     re = String::from(re.trim_end_matches(&['\r', '\n'][..]));
-    match Regex::new(&format!(r"(?i)({})", re)) {
-        Ok(regex) => regex,
-        Err(_) => {
-            eprintln!("'{}' is an invalid regex function", re);
-            exit(-1)
-        }
-    }
+    Regex::new(&format!(r"(?i)({})", re))
 }
 
 pub(crate) fn is_valid_username(username: &str) -> bool {
     USERNAME_VALIDATE.is_match(username)
 }
 
-pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Regex {
-    let re = match args.next() {
-        None => String::new(),
-        Some(re) => re
-    };
-    match Regex::new(&format!(r"(?i)({})", re)) {
-        Ok(filter) => filter,
-        Err(_) => {
-            eprintln!("Invalid regex pattern: {}", re);
-            exit(-1)
-        }
-    }
+pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Result<Regex, Error> {
+    let re = args.next().unwrap_or_else(String::new);
+    Regex::new(&format!(r#"(?i)({})"#, re))
 }
 
-pub(crate) fn extract_digits(s: &str) -> u32 {
+pub(crate) fn extract_digits(s: &str) -> Result<u32, ParseIntError> {
     let output: String = s.chars().filter(|c| c.is_numeric()).collect();
-    match output.parse::<u32>() {
-        Ok(digits) => digits,
-        Err(_) => {
-            eprintln!("Could not parse {}", s);
-            exit(-1)
-        }
-    }
+    output.parse::<u32>()
 }
