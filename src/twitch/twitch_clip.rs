@@ -15,7 +15,7 @@ pub(crate) fn print_clips_from(channel: &TwitchChannel, filter: &Regex, client: 
         let mut did_change = false;
         let response = get_clips_json(name, client_id, token, &cursor);
         let clips = match response
-            .get(0).expect(&response.to_string())
+            .get(0).unwrap_or_else(|| { panic!("{}", response.to_string()) })
             .get("data").unwrap()
             .get("user").unwrap()
             .get("clips").expect("Unknown Username!")

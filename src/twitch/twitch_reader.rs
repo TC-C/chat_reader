@@ -19,7 +19,7 @@ pub(crate) fn main() {
     let client_get_thread = spawn(move || {
         TwitchClient::new_unchecked(
             "kimne78kx3ncx6brgo4mv6wki5h1ko",
-            "e5iag6itee2k2j2xwqxyfwebo0yrcg",
+            "kodhjjhjwaw4f5q9x0dgydxcm7hjpo",
         )
     });
     let mut search_type = String::new();
@@ -74,7 +74,7 @@ fn get_clips(client: TwitchClient) {
 pub(crate) fn args_channel(args: &mut IntoIter<String>) {
     let client = TwitchClient::new_unchecked(
         "kimne78kx3ncx6brgo4mv6wki5h1ko",
-        "hfcm528b89m5eyturgicl5k6jpx2cb",
+        "kodhjjhjwaw4f5q9x0dgydxcm7hjpo",
     );
     let channel_name = match args.next() {
         None => {
@@ -161,8 +161,8 @@ fn display_channel(client: &TwitchClient, vods: Vec<TwitchVOD>, filter: Regex) {
 
 pub(crate) fn args_vod(args: &mut IntoIter<String>) {
     let client = &TwitchClient::new(
-        "cuwhphy3xzy01xn60rddmr57x8hzc6",
-        "9milc7hacuyl8eg5cdpgllbdqpze9u",
+        "kimne78kx3ncx6brgo4mv6wki5h1ko",
+        "kodhjjhjwaw4f5q9x0dgydxcm7hjpo",
     );
     let vod_id = match args.next() {
         None => panic!("No VOD ID declared after `-tv`"),

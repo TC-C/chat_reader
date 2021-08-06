@@ -7,6 +7,7 @@ use std::{
     vec::IntoIter,
 };
 use termion::{color, color::Rgb};
+pub(crate) const CLIENT_ID: &str = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 lazy_static! {
     pub(crate) static ref CLIENT: Client = Client::new();
     static ref USERNAME_VALIDATE: Regex = Regex::new(r#"^[a-zA-Z0-9][\w]{3,24}$"#).unwrap();
