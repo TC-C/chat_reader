@@ -1,10 +1,9 @@
-use crate::tools::{extract_digits, format_time, print_queue, CLIENT};
+use crate::tools::{exit_error, extract_digits, format_time, print_queue, CLIENT};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::header::COOKIE;
 use roxmltree::{Document, Node};
 use std::sync::mpsc::{channel, Receiver};
-use termion::color::{Fg, Red, Reset};
 lazy_static! {
     //working on initial URL
     static ref TITLE_NO_MATCHER: Regex = Regex::new("STATION/[0-9]{8}").unwrap();
@@ -105,7 +104,7 @@ impl AfreecaVideo {
                 None => continue,
                 Some(time) => match extract_digits(time.as_str()) {
                     Ok(digits) => digits,
-                    Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+                    Err(e) => exit_error(&e.to_string()),
                 },
             };
             let mut curr_secs = 0;

@@ -1,12 +1,17 @@
+use crossterm::{
+    execute,
+    style::{Color, Print, ResetColor, SetForegroundColor},
+};
 use lazy_static::lazy_static;
 use regex::{Error, Regex};
 use reqwest::blocking::Client;
-use std::num::{ParseFloatError, ParseIntError};
 use std::{
     io::{stdin, stdout, Write},
+    num::{ParseFloatError, ParseIntError},
+    process::exit,
     vec::IntoIter,
 };
-use termion::{color, color::Rgb};
+
 pub(crate) const CLIENT_ID: &str = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 lazy_static! {
     pub(crate) static ref CLIENT: Client = Client::new();
@@ -36,7 +41,7 @@ pub(crate) fn print_queue(comment_queue: &mut Vec<String>) {
     comment_queue.clear()
 }
 
-pub(crate) fn hex_to_rgb(hex: &str) -> Result<Rgb, ParseIntError> {
+pub(crate) fn hex_to_rgb(hex: &str) -> Result<Color, ParseIntError> {
     let hex = hex.trim_start_matches('#');
     const RADIX: u32 = 16;
     let r = match u8::from_str_radix(&hex[0..2], RADIX) {
@@ -51,7 +56,7 @@ pub(crate) fn hex_to_rgb(hex: &str) -> Result<Rgb, ParseIntError> {
         Ok(b) => b,
         Err(e) => return Err(e),
     };
-    Ok(color::Rgb(r, g, b))
+    Ok(Color::parse_ansi(&format!("2;{};{};{}", r, g, b)).unwrap())
 }
 
 pub(crate) fn format_time(seconds: u32) -> String {
@@ -95,4 +100,16 @@ pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Result<Regex, Error> {
 pub(crate) fn extract_digits(s: &str) -> Result<u32, ParseIntError> {
     let output: String = s.chars().filter(|c| c.is_numeric()).collect();
     output.parse::<u32>()
+}
+pub(crate) fn error(message: &str) {
+    execute!(
+        stdout(),
+        SetForegroundColor(Color::Red),
+        Print(format!("\n{}", message)),
+        ResetColor
+    );
+}
+pub(crate) fn exit_error(message: &str) -> ! {
+    error(message);
+    exit(-1)
 }

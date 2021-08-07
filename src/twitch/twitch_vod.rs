@@ -1,10 +1,16 @@
-use crate::tools::{clean_quotes, format_time_string, hex_to_rgb, print_queue, CLIENT_ID};
+use crate::tools::{clean_quotes, exit_error, format_time_string, hex_to_rgb, CLIENT_ID};
+use crossterm::{
+    execute,
+    style::{Color, Print, ResetColor, SetForegroundColor},
+};
 use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::blocking::Client;
 use serde_json::Value;
-use std::sync::mpsc::{channel, Receiver};
-use termion::color::{Fg, Red, Reset};
+use std::{
+    io::stdout,
+    sync::mpsc::{channel, Receiver},
+};
 lazy_static! {
     static ref CLIENT: Client = Client::new();
 }
@@ -16,11 +22,29 @@ pub(crate) struct TwitchVOD {
     animated_preview_url: String,
 }
 
+fn dump_comments(comments: &mut Vec<(String, String, String, Color)>) {
+    for comment in comments.iter_mut() {
+        let timestamp = &comment.0;
+        let display_name = &comment.1;
+        let message = &comment.2;
+        let user_color = comment.3;
+        execute!(
+            stdout(),
+            Print(format!("[{}][", timestamp)),
+            SetForegroundColor(user_color),
+            Print(String::from(display_name)),
+            ResetColor,
+            Print(format!("]: {}\n", message))
+        );
+    }
+    comments.clear()
+}
+
 impl TwitchVOD {
     /// Creates a new `TwitchVOD` from a `u32` that represents an ID and an `&str` that represents the title
     ///
     /// The function will not check any values and may result in errors when calling other functions
-    pub(crate) fn new_unchecked(id: u32, title: String, animated_preview_url: String) -> TwitchVOD {
+    pub(crate) fn new_unchecked(id: u32, title: String, animated_preview_url: String) -> Self {
         TwitchVOD {
             id,
             title,
@@ -30,7 +54,7 @@ impl TwitchVOD {
     /// Creates a new `TwitchVOD` from a `u32` that represents the ID of the VOD
     ///
     /// A valid ID would be `799499623`, which can be derived from the VOD URL: https://www.twitch.tv/videos/799499623
-    pub(crate) fn new(id: u32) -> TwitchVOD {
+    pub(crate) fn new(id: u32) -> Self {
         let request = r#"[{
       "operationName":"ComscoreStreamingQuery",
       "variables":{
@@ -100,7 +124,7 @@ impl TwitchVOD {
     /// By default, the outputs are queued into `comment_queue` and then will be allowed to print only when `rx` receives a boolean from a `Sender<bool>`
     pub(crate) fn print_chat(&self, filter: &Regex, rx: Receiver<()>) {
         let mut cursor = String::new();
-        let mut comment_queue: Vec<String> = Vec::new();
+        let mut comment_queue: Vec<(String, String, String, Color)> = Vec::new();
         let mut waiting_to_print = true;
         loop {
             let comment_json: Value = match CLIENT
@@ -114,9 +138,9 @@ impl TwitchVOD {
             {
                 Ok(get) => match get.json() {
                     Ok(json) => json,
-                    Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+                    Err(e) => exit_error(&e.to_string()),
                 },
-                Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+                Err(e) => exit_error(&e.to_string()),
             };
             let comments = comment_json
                 .get("comments")
@@ -133,7 +157,7 @@ impl TwitchVOD {
                         .to_string(),
                 ) {
                     Ok(timestamp) => timestamp,
-                    Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+                    Err(e) => exit_error(&e.to_string()),
                 };
                 let display_name = clean_quotes(
                     &comment
@@ -153,36 +177,29 @@ impl TwitchVOD {
                         .unwrap_or_else(|| panic!("\nCould not find body in message"))
                         .to_string(),
                 );
-                let color = match message.get("user_color") {
-                    None => String::new(),
-                    Some(color) => clean_quotes(&color.to_string()),
-                };
                 if filter.is_match(&body) {
-                    let comment;
-                    if color.is_empty() {
-                        comment = format!("[{}][{}]: {}", timestamp, display_name, body);
-                    } else {
-                        let color = match hex_to_rgb(&color) {
-                            Ok(color) => color,
-                            Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
-                        };
-                        comment = format!(
-                            "[{}][{user_color}{}{reset}]: {}",
-                            timestamp,
-                            display_name,
-                            body,
-                            user_color = Fg(color),
-                            reset = Fg(Reset)
-                        );
-                    }
-                    comment_queue.push(comment)
+                    let color = match message.get("user_color") {
+                        None => Color::Reset,
+                        Some(color) => {
+                            let c_string = clean_quotes(&color.to_string());
+                            if c_string.is_empty() {
+                                Color::Reset
+                            } else {
+                                match hex_to_rgb(&c_string) {
+                                    Ok(color) => color,
+                                    Err(e) => exit_error(&e.to_string()),
+                                }
+                            }
+                        }
+                    };
+                    comment_queue.push((timestamp, display_name, body, color))
                 }
                 if waiting_to_print {
                     if rx.try_recv().is_ok() {
                         waiting_to_print = false
                     }
                 } else {
-                    print_queue(&mut comment_queue)
+                    dump_comments(&mut comment_queue)
                 }
             }
             match comment_json.get("_next") {
@@ -192,7 +209,7 @@ impl TwitchVOD {
         }
         if !comment_queue.is_empty() {
             rx.recv().unwrap();
-            print_queue(&mut comment_queue)
+            dump_comments(&mut comment_queue)
         }
     }
 

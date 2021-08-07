@@ -1,10 +1,10 @@
+use crate::tools::exit_error;
 use crate::{afreecatv_channel::Blog, afreecatv_video::AfreecaVideo, tools::get_filter};
 use std::{
     io::{stdin, stdout, Write},
     sync::mpsc::{channel, Sender},
     thread::{spawn, JoinHandle},
 };
-use termion::color::{Fg, Red, Reset};
 
 pub(crate) fn main() {
     let mut search_type = String::new();
@@ -46,7 +46,7 @@ pub(crate) fn input_vod() {
     let video_get_thread = spawn(move || AfreecaVideo::new(&vod_link));
     let filter = match get_filter() {
         Ok(filter) => filter,
-        Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+        Err(e) => exit_error(&e.to_string()),
     };
     let video = video_get_thread.join().unwrap();
     video.print_chat_blocking(&filter);
@@ -69,7 +69,7 @@ pub(crate) fn input_blog() {
 
     let filter = match get_filter() {
         Ok(filter) => filter,
-        Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+        Err(e) => exit_error(&e.to_string()),
     };
     let videos = videos_get_thread.join().unwrap();
 

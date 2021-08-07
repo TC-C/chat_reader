@@ -1,6 +1,5 @@
-use crate::tools::CLIENT_ID;
 use crate::{
-    tools::{clean_quotes, CLIENT},
+    tools::{clean_quotes, CLIENT, CLIENT_ID},
     twitch_channel::TwitchChannel,
 };
 use regex::Regex;

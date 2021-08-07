@@ -1,3 +1,4 @@
+use crate::tools::{error, exit_error};
 use crate::{
     tools::{args_filter, get_filter, is_valid_username},
     twitch_channel::TwitchChannel,
@@ -11,7 +12,6 @@ use std::{
     thread::{spawn, JoinHandle},
     vec::IntoIter,
 };
-use termion::color::{Fg, Red, Reset};
 
 pub(crate) fn main() {
     let mut search_type = String::new();
@@ -55,19 +55,27 @@ fn get_clips() {
     let channel = TwitchChannel::new(&channel_name);
     let filter = match filter_get_thread.join().unwrap() {
         Ok(filter) => filter,
-        Err(e) => {
-            panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset));
-        }
+        Err(e) => exit_error(&e.to_string()),
     };
     print_clips_from(&channel, &filter);
 }
 
 pub(crate) fn args_channel(args: &mut IntoIter<String>) {
     let channel_name = match args.next() {
-        None => panic!("No channel declared after `-tc`"),
+        None => exit_error("-tc\n    ^^^\nNo channel name declared after `-tc`"),
         Some(channel_name) => {
             if !is_valid_username(&channel_name) {
-                panic!("Channel name: {} is an invalid username", channel_name);
+                let mut other_args = String::new();
+                for arg in args {
+                    other_args += " ";
+                    other_args += &arg
+                }
+                exit_error(&format!(
+                    "-tc {}{:?}\n    {arrows}\nerror: invalid channel name declared after `-tc`",
+                    channel_name,
+                    other_args,
+                    arrows = "^".repeat(channel_name.len())
+                ))
             }
             channel_name
         }
@@ -78,7 +86,7 @@ pub(crate) fn args_channel(args: &mut IntoIter<String>) {
     if has_filter {
         filter = match args_filter(args) {
             Ok(filter) => filter,
-            Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+            Err(e) => exit_error(&e.to_string()),
         };
     }
     let ch = TwitchChannel::new(&channel_name);
@@ -105,7 +113,10 @@ fn input_channel() {
         .expect("Could not read response for <channel_name>");
     channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
     if !is_valid_username(&channel_name) {
-        eprintln!("Channel name: {} is an invalid username\n", channel_name);
+        error(&format!(
+            "Channel name: {} is an invalid username\n",
+            channel_name
+        ));
         input_channel();
         return;
     }
@@ -114,7 +125,7 @@ fn input_channel() {
     let vods = ch.vods();
     let filter = match get_filter_thread.join().unwrap() {
         Ok(filter) => filter,
-        Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+        Err(e) => exit_error(&e.to_string()),
     };
     display_channel(vods, filter)
 }
@@ -144,10 +155,10 @@ fn display_channel(vods: Vec<TwitchVOD>, filter: Regex) {
 
 pub(crate) fn args_vod(args: &mut IntoIter<String>) {
     let vod_id = match args.next() {
-        None => panic!("No VOD ID declared after `-tv`"),
+        None => exit_error("-tv\n    ^^^\nNo VOD ID declared after `-tv`"),
         Some(vod_id) => match vod_id.parse::<u32>() {
             Ok(vod_id) => vod_id,
-            Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+            Err(e) => exit_error(&e.to_string()),
         },
     };
 
@@ -157,7 +168,7 @@ pub(crate) fn args_vod(args: &mut IntoIter<String>) {
     if has_filter {
         filter = match args_filter(args) {
             Ok(filter) => filter,
-            Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+            Err(e) => exit_error(&e.to_string()),
         };
     }
     vod.print_chat_blocking(&filter)
@@ -166,19 +177,15 @@ pub(crate) fn args_vod(args: &mut IntoIter<String>) {
 fn input_vod() {
     let mut vod_id = String::new();
     print!("Input VOD ID >>> ");
-    stdout()
-        .flush()
-        .expect("Could not flush line when preparing for <vod_id>");
-    stdin()
-        .read_line(&mut vod_id)
-        .expect("Could not read response for <vod_id>");
+    stdout().flush().unwrap();
+    stdin().read_line(&mut vod_id).unwrap();
     vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
     let vod_id = vod_id.parse::<u32>().unwrap();
     let get_filter_thread = spawn(get_filter);
     let vod = TwitchVOD::new(vod_id);
     let filter = match get_filter_thread.join().unwrap() {
         Ok(filter) => filter,
-        Err(e) => panic!("{red}{}{reset}", e, red = Fg(Red), reset = Fg(Reset)),
+        Err(e) => exit_error(&e.to_string()),
     };
     println!("{}", vod.m3u8());
     vod.print_chat_blocking(&filter)

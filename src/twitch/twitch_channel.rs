@@ -1,10 +1,11 @@
 use serde_json::Value;
 
-use crate::tools::CLIENT_ID;
+use crate::tools::exit_error;
 use crate::{
-    tools::{clean_quotes, CLIENT},
+    tools::{clean_quotes, CLIENT, CLIENT_ID},
     twitch_vod::TwitchVOD,
 };
+use serde_json::value::Value::Null;
 
 pub(crate) struct TwitchChannel {
     pub(crate) name: String,
@@ -54,15 +55,19 @@ impl TwitchChannel {
             .unwrap()
             .json()
             .unwrap();
-        let vod_data = data
+        let user = data
             .get(0)
             .unwrap()
             .get("data")
             .unwrap()
             .get("user")
-            .unwrap()
+            .unwrap();
+        if user == &Null {
+            exit_error("No user was found\nExiting...")
+        }
+        let vod_data = user
             .get("videos")
-            .unwrap_or_else(|| panic!("This user does not exist"))
+            .unwrap()
             .get("edges")
             .unwrap()
             .as_array()

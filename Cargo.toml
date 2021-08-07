@@ -11,7 +11,7 @@ lazy_static = "1.4.0"
 serde_json = "1.0.64"
 regex = "1.5.4"
 roxmltree = "0.14.1"
-termion = "1.5.6"
+crossterm = "0.20.0"
 
 [profile.release]
 lto = "fat"
