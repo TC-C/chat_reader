@@ -19,6 +19,7 @@ mod youtube_reader;
 
 mod tools;
 
+use crate::tools::error;
 use std::{
     env,
     io::{stdin, stdout, Write},
@@ -34,10 +35,10 @@ fn main_args(mut args: IntoIter<String>) {
                 match arg {
                     "-tc" => twitch_reader::args_channel(&mut args),
                     "-tv" => twitch_reader::args_vod(&mut args),
-                    &_ => panic!(
+                    &_ => error(&format!(
                         "'{}' was an unrecognized argument, expected [-tc, -tv]",
                         arg
-                    ),
+                    )),
                 }
             }
         }
@@ -66,7 +67,7 @@ fn main() {
         "afreecatv" => afreecatv_reader::main(),
         "youtube" => youtube_reader::main(),
         _ => {
-            eprintln!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV, YouTube]\n", platform_name);
+            error(&format!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV, YouTube]\n", platform_name));
             main()
         }
     }

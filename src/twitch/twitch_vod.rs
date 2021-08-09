@@ -5,7 +5,8 @@ use crossterm::{
 };
 use lazy_static::lazy_static;
 use regex::Regex;
-use reqwest::blocking::Client;
+use reqwest::blocking::{Client, Response};
+use reqwest::Error;
 use serde_json::Value;
 use std::{
     io::stdout,
@@ -54,7 +55,7 @@ impl TwitchVOD {
     /// Creates a new `TwitchVOD` from a `u32` that represents the ID of the VOD
     ///
     /// A valid ID would be `799499623`, which can be derived from the VOD URL: https://www.twitch.tv/videos/799499623
-    pub(crate) fn new(id: u32) -> Self {
+    pub(crate) fn new(id: u32) -> Result<Self, String> {
         let request = r#"[{
       "operationName":"ComscoreStreamingQuery",
       "variables":{
@@ -75,15 +76,17 @@ impl TwitchVOD {
          }
       }
    }]"#;
-        let data: Value = CLIENT
+        let data: Value = match CLIENT
             .post("https://gql.twitch.tv/gql")
             .header("Client-Id", CLIENT_ID)
             .body(request)
             .send()
-            .unwrap()
-            .json()
-            .unwrap();
-        //dbg!(&data);
+        {
+            Ok(response) => response,
+            Err(e) => return Err(e.to_string()),
+        }
+        .json()
+        .unwrap();
         let title = clean_quotes(
             &data
                 .get(0)
@@ -96,11 +99,11 @@ impl TwitchVOD {
                 .unwrap()
                 .to_string(),
         );
-        TwitchVOD {
+        Ok(TwitchVOD {
             title,
             id,
             animated_preview_url: String::new(),
-        }
+        })
     }
     /// Identical function to `twitch_vod::print_chat()` except that no Receiver<()> is required.
     ///

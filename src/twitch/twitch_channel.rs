@@ -1,11 +1,10 @@
-use serde_json::Value;
-
-use crate::tools::exit_error;
 use crate::{
     tools::{clean_quotes, CLIENT, CLIENT_ID},
     twitch_vod::TwitchVOD,
 };
+
 use serde_json::value::Value::Null;
+use serde_json::Value;
 
 pub(crate) struct TwitchChannel {
     pub(crate) name: String,
@@ -15,7 +14,7 @@ impl TwitchChannel {
     /// Creates a new `TwitchChannel` from an `&str` that represents the `name` of a channel
     ///
     /// A valid name would be "nasa", which can be derived from the channel URL: https://www.twitch.tv/nasa
-    pub(crate) fn new(name: &str) -> TwitchChannel {
+    pub(crate) fn new(name: &str) -> Self {
         TwitchChannel {
             name: String::from(name),
         }
@@ -25,7 +24,7 @@ impl TwitchChannel {
     ///
     /// The max size of the returned `Vec<TwitchVOD>` will be 100, which is the limit for a single API query
 
-    pub(crate) fn vods(&self) -> Vec<TwitchVOD> {
+    pub(crate) fn vods(&self) -> Result<Vec<TwitchVOD>, String> {
         let request = r#"[
    {
       "operationName":"FilterableVideoTower_Videos",
@@ -47,14 +46,15 @@ impl TwitchChannel {
       }
    }
 ]"#;
-        let data: Value = CLIENT
+        let data: Value = match CLIENT
             .post("https://gql.twitch.tv/gql")
             .header("Client-Id", CLIENT_ID)
             .body(request)
             .send()
-            .unwrap()
-            .json()
-            .unwrap();
+        {
+            Ok(response) => response.json().unwrap(),
+            Err(e) => return Err(e.to_string()),
+        };
         let user = data
             .get(0)
             .unwrap()
@@ -63,7 +63,7 @@ impl TwitchChannel {
             .get("user")
             .unwrap();
         if user == &Null {
-            exit_error("No user was found\nExiting...")
+            return Err(format!("{} could not be found", self.name));
         }
         let vod_data = user
             .get("videos")
@@ -84,6 +84,6 @@ impl TwitchChannel {
             let v = TwitchVOD::new_unchecked(id, title, animated_preview_url);
             vods.push(v);
         }
-        vods
+        Ok(vods)
     }
 }

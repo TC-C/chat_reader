@@ -1,8 +1,10 @@
+use crate::tools::error;
 use crate::{
     tools::{clean_quotes, CLIENT, CLIENT_ID},
     twitch_channel::TwitchChannel,
 };
 use regex::Regex;
+use reqwest::Error;
 use serde_json::Value;
 
 pub(crate) fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
@@ -10,7 +12,13 @@ pub(crate) fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
     let mut cursor = String::new();
     loop {
         let mut did_change = false;
-        let response = get_clips_json(name, &cursor);
+        let response = match get_clips_json(name, &cursor) {
+            Ok(response) => response,
+            Err(e) => {
+                error(&e.to_string());
+                return;
+            }
+        };
         let clips = match response
             .get(0)
             .unwrap_or_else(|| panic!("{}", response.to_string()))
@@ -44,7 +52,7 @@ pub(crate) fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
     }
 }
 
-fn get_clips_json(name: &str, cursor: &str) -> Value {
+fn get_clips_json(name: &str, cursor: &str) -> Result<Value, Error> {
     let request = r#"[
    {
       "operationName":"ClipsCards__User",
@@ -68,13 +76,14 @@ fn get_clips_json(name: &str, cursor: &str) -> Value {
       }
    }
 ]"#;
-    CLIENT
+    match CLIENT
         .post("https://gql.twitch.tv/gql")
         .header("Client-Id", CLIENT_ID)
         .header("Connection", "keep-alive")
         .body(request)
         .send()
-        .unwrap()
-        .json()
-        .unwrap()
+    {
+        Ok(result) => Ok(result.json().unwrap()),
+        Err(e) => Err(e),
+    }
 }
