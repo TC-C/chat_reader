@@ -33,13 +33,13 @@ impl AfreecaVideo {
     pub(crate) fn new(url: &str) -> AfreecaVideo {
         let view_source = CLIENT.get(url).send().unwrap().text().unwrap();
         let title_no = TITLE_NO_MATCHER.find(url).expect("Invalid URL!").as_str()[8..]
-            .parse::<u32>()
+            .parse()
             .unwrap();
         let station_no = STATION_NO_MATCHER.find(&view_source).unwrap().as_str()[11..]
-            .parse::<u32>()
+            .parse()
             .unwrap();
         let bbs_no = BBS_NO_MATCHER.find(&view_source).unwrap().as_str()[7..]
-            .parse::<u32>()
+            .parse()
             .unwrap();
         AfreecaVideo {
             title_no,
@@ -51,13 +51,13 @@ impl AfreecaVideo {
     pub fn new_unchecked(title_no: &str, station_no: &str, bbs_no: &str) -> AfreecaVideo {
         AfreecaVideo {
             title_no: title_no
-                .parse::<u32>()
+                .parse()
                 .unwrap_or_else(|_| panic!("{} is NaN", title_no)),
             station_no: station_no
-                .parse::<u32>()
+                .parse()
                 .unwrap_or_else(|_| panic!("{} is NaN", station_no)),
             bbs_no: bbs_no
-                .parse::<u32>()
+                .parse()
                 .unwrap_or_else(|_| panic!("{} is NaN", bbs_no)),
         }
     }

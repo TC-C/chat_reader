@@ -76,7 +76,7 @@ impl TwitchChannel {
         for vod in vod_data {
             let vod = vod.get("node").unwrap();
             let id = clean_quotes(&vod.get("id").unwrap().to_string())
-                .parse::<u32>()
+                .parse()
                 .unwrap();
             let title = clean_quotes(&vod.get("title").unwrap().to_string());
             let animated_preview_url =

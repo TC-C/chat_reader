@@ -139,35 +139,40 @@ fn input_channel() {
 }
 
 fn display_channel(vods: Vec<TwitchVOD>, filter: Regex) {
-    let mut threads: Vec<(TwitchVOD, Sender<()>, JoinHandle<()>)> = Vec::new();
+    let mut threads: Vec<(
+        (String, u32),
+        Sender<()>,
+        JoinHandle<()>,
+        JoinHandle<String>,
+    )> = Vec::new();
     for vod in vods {
         //The thread must own all the parameters
         let (tx, rx) = channel();
         let vod_thread = vod.to_owned();
         let filter = filter.to_owned();
         let chat_thread = spawn(move || vod_thread.print_chat(&filter, rx));
-
-        threads.push((vod, tx, chat_thread));
+        let vod_thread = vod.to_owned();
+        let url_thread = spawn(move || vod_thread.m3u8());
+        threads.push(((vod.title, vod.id), tx, chat_thread, url_thread));
     }
     for reader in threads {
-        let vod = reader.0;
+        let title = reader.0 .0;
+        let id = reader.0 .1;
         let tx = reader.1;
         let chat_thread = reader.2;
+        let url_thread = reader.3;
 
-        println!("\n{} v{}", vod.title, vod.id);
-        println!("{}", vod.m3u8());
-        match tx.send(()) {
-            Ok(_) => {}
-            Err(_) => continue,
-        }
+        println!("\n{} v{}", title, id);
+        println!("{}", url_thread.join().unwrap());
+        tx.send(());
         chat_thread.join().unwrap();
     }
 }
 
 pub(crate) fn args_vod(args: &mut IntoIter<String>) {
-    let vod_id = match args.next() {
+    let vod_id: u32 = match args.next() {
         None => return error("-tv\n    ^^^\nNo VOD ID declared after `-tv`"),
-        Some(vod_id) => match vod_id.parse::<u32>() {
+        Some(vod_id) => match vod_id.parse() {
             Ok(vod_id) => vod_id,
             Err(e) => return error(&e.to_string()),
         },
@@ -177,9 +182,8 @@ pub(crate) fn args_vod(args: &mut IntoIter<String>) {
         Ok(vod) => vod,
         Err(e) => return error(&e),
     };
-    let has_filter = args_has_filter(args);
     let filter;
-    if has_filter {
+    if args_has_filter(args) {
         filter = match args_filter(args) {
             Ok(filter) => filter,
             Err(e) => return error(&e.to_string()),
@@ -196,7 +200,7 @@ fn input_vod() {
     stdout().flush().unwrap();
     stdin().read_line(&mut vod_id).unwrap();
     vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
-    let vod_id = vod_id.parse::<u32>().unwrap();
+    let vod_id = vod_id.parse().unwrap();
     let get_filter_thread = spawn(get_filter);
     let vod = match TwitchVOD::new(vod_id) {
         Ok(vod) => vod,

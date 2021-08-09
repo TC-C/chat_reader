@@ -25,11 +25,10 @@ pub(crate) fn clean_quotes(str: &str) -> String {
 }
 
 pub(crate) fn format_time_string(seconds: &str) -> Result<String, ParseFloatError> {
-    let seconds: f32 = match seconds.parse() {
-        Ok(seconds) => seconds,
+    let seconds: u32 = match seconds.parse::<f32>() {
+        Ok(seconds) => seconds as u32,
         Err(e) => return Err(e),
     };
-    let seconds = seconds as u32;
     Ok(format_time(seconds))
 }
 
@@ -98,8 +97,10 @@ pub(crate) fn args_filter(args: &mut IntoIter<String>) -> Result<Regex, Error> {
 }
 
 pub(crate) fn extract_digits(s: &str) -> Result<u32, ParseIntError> {
-    let output: String = s.chars().filter(|c| c.is_numeric()).collect();
-    output.parse::<u32>()
+    s.chars()
+        .filter(|c| c.is_numeric())
+        .collect::<String>()
+        .parse()
 }
 pub(crate) fn error(message: &str) {
     execute!(
