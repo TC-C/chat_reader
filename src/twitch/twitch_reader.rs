@@ -13,30 +13,33 @@ use std::{
 };
 
 pub(crate) fn main() {
-    let mut search_type = String::new();
-    print!("Would you like to search through entire Channel, single VOD, or clips? >>> ");
-    stdout()
-        .flush()
-        .expect("Could not flush line when preparing for <search_type>");
-    stdin()
-        .read_line(&mut search_type)
-        .expect("Could not read response for <search_type>");
-    search_type = search_type
-        .trim_end_matches(&['\r', '\n'][..])
-        .to_lowercase();
-    let search_type = search_type.as_str();
+    loop {
+        let mut search_type = String::new();
+        print!("Would you like to search through entire Channel, single VOD, or clips? >>> ");
+        stdout()
+            .flush()
+            .expect("Could not flush line when preparing for <search_type>");
+        stdin()
+            .read_line(&mut search_type)
+            .expect("Could not read response for <search_type>");
+        search_type = search_type
+            .trim_end_matches(&['\r', '\n'][..])
+            .to_lowercase();
+        let search_type = search_type.as_str();
 
-    match search_type {
-        "vod" => input_vod(),
-        "channel" => input_channel(),
-        "clips" => get_clips(),
-        _ => {
-            error(&format!(
-                "\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]\n",
-                search_type
-            ));
-            main()
+        match search_type {
+            "vod" => input_vod(),
+            "channel" => input_channel(),
+            "clips" => get_clips(),
+            _ => {
+                error(&format!(
+                    "\n'{}' was an unexpected response\nPlease choose between [Channel, VOD, Clips]\n",
+                    search_type
+                ));
+                continue;
+            }
         }
+        break;
     }
 }
 
@@ -153,7 +156,10 @@ fn display_channel(vods: Vec<TwitchVOD>, filter: Regex) {
 
         println!("\n{} v{}", vod.title, vod.id);
         println!("{}", vod.m3u8());
-        tx.send(());
+        match tx.send(()) {
+            Ok(_) => {}
+            Err(_) => continue,
+        }
         chat_thread.join().unwrap();
     }
 }

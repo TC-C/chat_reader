@@ -107,7 +107,8 @@ pub(crate) fn error(message: &str) {
         SetForegroundColor(Color::Red),
         Print(format!("\n{}", message)),
         ResetColor
-    );
+    )
+    .unwrap()
 }
 pub(crate) fn exit_error(message: &str) -> ! {
     error(message);

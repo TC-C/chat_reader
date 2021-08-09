@@ -5,8 +5,7 @@ use crossterm::{
 };
 use lazy_static::lazy_static;
 use regex::Regex;
-use reqwest::blocking::{Client, Response};
-use reqwest::Error;
+use reqwest::blocking::Client;
 use serde_json::Value;
 use std::{
     io::stdout,
@@ -36,7 +35,8 @@ fn dump_comments(comments: &mut Vec<(String, String, String, Color)>) {
             Print(String::from(display_name)),
             ResetColor,
             Print(format!("]: {}\n", message))
-        );
+        )
+        .unwrap();
     }
     comments.clear()
 }

@@ -15,8 +15,7 @@ pub(crate) fn print_clips_from(channel: &TwitchChannel, filter: &Regex) {
         let response = match get_clips_json(name, &cursor) {
             Ok(response) => response,
             Err(e) => {
-                error(&e.to_string());
-                return;
+                return error(&e.to_string());
             }
         };
         let clips = match response
