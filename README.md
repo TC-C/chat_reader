@@ -6,7 +6,6 @@ Currently, Twitch and AfreecaTV are the only supported platforms.
 In addition, this tool retrieves direct M3U8 links to Twitch Vods and can search through clips on Twitch Channel
 
 # Build instructions 
-<img src="https://techworm.page/wp-content/uploads/2019/05/download-17.png" width=275 height=150></img>
 
 (If you haven't installed already)
 Install Rust; You can use [Rustup](https://www.rust-lang.org/tools/install)
