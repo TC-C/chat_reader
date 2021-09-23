@@ -21,34 +21,28 @@ mod tools;
 
 use crate::tools::error;
 use std::{
-    env,
+    env::args,
+    env::Args,
     io::{stdin, stdout, Write},
-    vec::IntoIter,
 };
 
-fn main_args(mut args: IntoIter<String>) {
-    loop {
-        match args.next() {
-            None => break,
-            Some(arg) => {
-                let arg = arg.as_str();
-                match arg {
-                    "-tc" => twitch_reader::args_channel(&mut args),
-                    "-tv" => twitch_reader::args_vod(&mut args),
-                    &_ => error(&format!(
-                        "'{}' was an unrecognized argument, expected [-tc, -tv]",
-                        arg
-                    )),
-                }
-            }
+fn main_args(mut args: Args) {
+    while let Some(arg) = args.next() {
+        let arg = arg.as_ref();
+        match arg {
+            "-tc" => twitch_reader::args_channel(&mut args),
+            "-tv" => twitch_reader::args_vod(&mut args),
+            &_ => error(format!(
+                "'{}' was an unrecognized argument, expected [-tc, -tv]",
+                arg
+            )),
         }
     }
 }
 
 fn main() {
-    if env::args().len() > 1 {
-        let args: Vec<String> = env::args().collect();
-        let mut args = args.into_iter();
+    if args().len() > 1 {
+        let mut args: Args = args();
         args.next();
         main_args(args);
         return;
@@ -67,7 +61,7 @@ fn main() {
         "afreecatv" => afreecatv_reader::main(),
         "youtube" => youtube_reader::main(),
         _ => {
-            error(&format!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV, YouTube]\n", platform_name));
+            error(format!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV, YouTube]\n", platform_name));
             main()
         }
     }

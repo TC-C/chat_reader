@@ -3,6 +3,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use reqwest::header::COOKIE;
 use roxmltree::{Document, Node};
+use std::num::ParseIntError;
 use std::sync::mpsc::{channel, Receiver};
 lazy_static! {
     //working on initial URL
@@ -30,35 +31,36 @@ pub(crate) struct AfreecaVideo {
 }
 
 impl AfreecaVideo {
-    pub(crate) fn new(url: &str) -> AfreecaVideo {
-        let view_source = CLIENT.get(url).send().unwrap().text().unwrap();
-        let title_no = TITLE_NO_MATCHER.find(url).expect("Invalid URL!").as_str()[8..]
-            .parse()
-            .unwrap();
-        let station_no = STATION_NO_MATCHER.find(&view_source).unwrap().as_str()[11..]
-            .parse()
-            .unwrap();
-        let bbs_no = BBS_NO_MATCHER.find(&view_source).unwrap().as_str()[7..]
-            .parse()
-            .unwrap();
-        AfreecaVideo {
+    pub(crate) fn new<S: AsRef<str>>(url: S) -> Result<AfreecaVideo, ParseIntError> {
+        let view_source = CLIENT.get(url.as_ref()).send().unwrap().text().unwrap();
+        let title_no = TITLE_NO_MATCHER
+            .find(url.as_ref())
+            .expect("Invalid URL!")
+            .as_str()[8..]
+            .parse()?;
+        let station_no = STATION_NO_MATCHER.find(&view_source).unwrap().as_str()[11..].parse()?;
+        let bbs_no = BBS_NO_MATCHER.find(&view_source).unwrap().as_str()[7..].parse()?;
+        Ok(AfreecaVideo {
             title_no,
             station_no,
             bbs_no,
-        }
+        })
     }
 
-    pub fn new_unchecked(title_no: &str, station_no: &str, bbs_no: &str) -> AfreecaVideo {
+    pub fn new_unchecked<S: AsRef<str>>(title_no: S, station_no: S, bbs_no: S) -> AfreecaVideo {
         AfreecaVideo {
-            title_no: title_no
-                .parse()
-                .unwrap_or_else(|_| panic!("{} is NaN", title_no)),
-            station_no: station_no
-                .parse()
-                .unwrap_or_else(|_| panic!("{} is NaN", station_no)),
-            bbs_no: bbs_no
-                .parse()
-                .unwrap_or_else(|_| panic!("{} is NaN", bbs_no)),
+            title_no: match title_no.as_ref().parse() {
+                Ok(title_no) => title_no,
+                Err(e) => exit_error(e),
+            },
+            station_no: match station_no.as_ref().parse() {
+                Ok(station_no) => station_no,
+                Err(e) => exit_error(e),
+            },
+            bbs_no: match bbs_no.as_ref().parse() {
+                Ok(bbs_no) => bbs_no,
+                Err(e) => exit_error(e),
+            },
         }
     }
     fn url(&self) -> String {
@@ -79,9 +81,8 @@ impl AfreecaVideo {
         let xml = CLIENT
             .get(self.url())
             .header(COOKIE, DUMMY_COOKIE)
-            .header("Connection", "keep-alive")
             .send()
-            .expect("https://stbbs.afreecatv.com refused to connect")
+            .unwrap()
             .text()
             .unwrap();
         let mut row_key_iterator = ROW_KEY_MATCHER.find_iter(&xml);
@@ -102,13 +103,9 @@ impl AfreecaVideo {
             let row_key = row_key[5..34].to_string();
             let row_time = match row_time_iterator.next() {
                 None => continue,
-                Some(time) => match extract_digits(time.as_str()) {
-                    Ok(digits) => digits,
-                    Err(e) => exit_error(&e.to_string()),
-                },
+                Some(time) => extract_digits(time.as_str()),
             };
             let mut curr_secs = 0;
-
             loop {
                 let transcript_url = format!(
                     "https://videoimg.afreecatv.com/php/ChatLoadSplit.php?rowKey={}_c&startTime={}",

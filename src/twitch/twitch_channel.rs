@@ -14,9 +14,9 @@ impl TwitchChannel {
     /// Creates a new `TwitchChannel` from an `&str` that represents the `name` of a channel
     ///
     /// A valid name would be "nasa", which can be derived from the channel URL: https://www.twitch.tv/nasa
-    pub(crate) fn new(name: &str) -> Self {
+    pub(crate) fn new<S: AsRef<str>>(name: S) -> Self {
         TwitchChannel {
-            name: String::from(name),
+            name: name.as_ref().to_owned(),
         }
     }
 
@@ -75,12 +75,12 @@ impl TwitchChannel {
         let mut vods = Vec::with_capacity(vod_data.len());
         for vod in vod_data {
             let vod = vod.get("node").unwrap();
-            let id = clean_quotes(&vod.get("id").unwrap().to_string())
+            let id = clean_quotes(vod.get("id").unwrap().to_string())
                 .parse()
                 .unwrap();
-            let title = clean_quotes(&vod.get("title").unwrap().to_string());
+            let title = clean_quotes(vod.get("title").unwrap().to_string());
             let animated_preview_url =
-                clean_quotes(&vod.get("animatedPreviewURL").unwrap().to_string());
+                clean_quotes(vod.get("animatedPreviewURL").unwrap().to_string());
             let v = TwitchVOD::new_unchecked(id, title, animated_preview_url);
             vods.push(v);
         }

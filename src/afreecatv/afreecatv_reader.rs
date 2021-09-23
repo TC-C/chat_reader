@@ -1,5 +1,6 @@
 use crate::tools::exit_error;
 use crate::{afreecatv_channel::Blog, afreecatv_video::AfreecaVideo, tools::get_filter};
+
 use std::{
     io::{stdin, stdout, Write},
     sync::mpsc::{channel, Sender},
@@ -46,9 +47,12 @@ pub(crate) fn input_vod() {
     let video_get_thread = spawn(move || AfreecaVideo::new(&vod_link));
     let filter = match get_filter() {
         Ok(filter) => filter,
-        Err(e) => exit_error(&e.to_string()),
+        Err(e) => exit_error(e),
     };
-    let video = video_get_thread.join().unwrap();
+    let video = match video_get_thread.join().unwrap() {
+        Ok(video) => video,
+        Err(e) => exit_error(e),
+    };
     video.print_chat_blocking(&filter);
 }
 
@@ -69,7 +73,7 @@ pub(crate) fn input_blog() {
 
     let filter = match get_filter() {
         Ok(filter) => filter,
-        Err(e) => exit_error(&e.to_string()),
+        Err(e) => exit_error(e),
     };
     let videos = videos_get_thread.join().unwrap();
 
