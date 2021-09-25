@@ -15,4 +15,4 @@ crossterm = "0.20.0"
 
 [profile.release]
 lto = "fat"
-opt-level = "z"
+opt-level = 3
