@@ -1,10 +1,11 @@
 use crate::{
-    tools::{args_filter, error, get_filter, is_valid_username},
+    tools::{args_filter, error, get_filter, get_input, is_valid_username},
     twitch_channel::TwitchChannel,
     twitch_clip::print_clips_from,
     twitch_vod::TwitchVOD,
 };
 use regex::Regex;
+use std::iter::Skip;
 use std::{
     env::Args,
     io::{stdin, stdout, Write},
@@ -14,19 +15,10 @@ use std::{
 
 pub(crate) fn main() {
     loop {
-        let mut search_type = String::new();
         print!("Would you like to search through entire Channel, single VOD, or clips? >>> ");
-        stdout()
-            .flush()
-            .expect("Could not flush line when preparing for <search_type>");
-        stdin()
-            .read_line(&mut search_type)
-            .expect("Could not read response for <search_type>");
-        search_type = search_type
-            .trim_end_matches(&['\r', '\n'][..])
-            .to_lowercase();
+        let mut search_type = get_input();
+        search_type = search_type.to_lowercase();
         let search_type = search_type.as_str();
-
         match search_type {
             "vod" => input_vod(),
             "channel" => input_channel(),
@@ -44,25 +36,17 @@ pub(crate) fn main() {
 }
 
 fn get_clips() {
-    let mut channel_name = String::new();
     print!("Input Channel Name >>> ");
-    stdout()
-        .flush()
-        .expect("Could not flush line when preparing for <channel_name>");
-    stdin()
-        .read_line(&mut channel_name)
-        .expect("Could not read response for <channel_name>");
-    let filter_get_thread = spawn(get_filter);
-    channel_name = String::from(channel_name.trim_end_matches(&['\r', '\n'][..]));
+    let channel_name = get_input();
     let channel = TwitchChannel::new(&channel_name);
-    let filter = match filter_get_thread.join().unwrap() {
+    let filter = match get_filter() {
         Ok(filter) => filter,
-        Err(e) => return error(&e.to_string()),
+        Err(e) => return error(e),
     };
     print_clips_from(&channel, &filter);
 }
 
-pub(crate) fn args_channel(args: &mut Args) {
+pub(crate) fn args_channel(args: &mut Skip<Args>) {
     let channel_name = match args.next() {
         None => return error("-tc\n    ^^^\nNo channel name declared after `-tc`"),
         Some(channel_name) => {
@@ -88,7 +72,7 @@ pub(crate) fn args_channel(args: &mut Args) {
     if has_filter {
         filter = match args_filter(args) {
             Ok(filter) => filter,
-            Err(e) => return error(&e.to_string()),
+            Err(e) => return error(e),
         };
     }
     let ch = TwitchChannel::new(&channel_name);
@@ -96,11 +80,10 @@ pub(crate) fn args_channel(args: &mut Args) {
         Ok(vods) => vods,
         Err(e) => return error(e),
     };
-
     display_channel(vods, filter);
 }
 
-fn args_has_filter(args: &mut Args) -> bool {
+fn args_has_filter(args: &mut Skip<Args>) -> bool {
     match args.next() {
         None => false,
         Some(label) => label.eq_ignore_ascii_case("-f"),
@@ -125,13 +108,12 @@ fn input_channel() {
         input_channel();
         return;
     }
-    let get_filter_thread = spawn(get_filter);
     let ch = TwitchChannel::new(&channel_name);
     let vods = match ch.vods() {
         Ok(vods) => vods,
         Err(e) => return error(e),
     };
-    let filter = match get_filter_thread.join().unwrap() {
+    let filter = match get_filter() {
         Ok(filter) => filter,
         Err(e) => return error(e),
     };
@@ -169,7 +151,7 @@ fn display_channel(vods: Vec<TwitchVOD>, filter: Regex) {
     }
 }
 
-pub(crate) fn args_vod(args: &mut Args) {
+pub(crate) fn args_vod(args: &mut Skip<Args>) {
     let vod_id: u32 = match args.next() {
         None => return error("-tv\n    ^^^\nNo VOD ID declared after `-tv`"),
         Some(vod_id) => match vod_id.parse() {
@@ -195,18 +177,14 @@ pub(crate) fn args_vod(args: &mut Args) {
 }
 
 fn input_vod() {
-    let mut vod_id = String::new();
     print!("Input VOD ID >>> ");
-    stdout().flush().unwrap();
-    stdin().read_line(&mut vod_id).unwrap();
-    vod_id = String::from(vod_id.trim_end_matches(&['\r', '\n'][..]));
+    let vod_id = get_input();
     let vod_id = vod_id.parse().unwrap();
-    let get_filter_thread = spawn(get_filter);
     let vod = match TwitchVOD::new(vod_id) {
         Ok(vod) => vod,
         Err(e) => return error(e),
     };
-    let filter = match get_filter_thread.join().unwrap() {
+    let filter = match get_filter() {
         Ok(filter) => filter,
         Err(e) => return error(e),
     };
