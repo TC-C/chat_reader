@@ -12,21 +12,17 @@ mod twitch_clip;
 mod twitch_reader;
 #[path = "twitch/twitch_vod.rs"]
 mod twitch_vod;
-#[path = "youtube/youtube_channel.rs"]
-mod youtube_channel;
-#[path = "youtube/youtube_reader.rs"]
-mod youtube_reader;
 
 mod tools;
 
 use crate::tools::error;
 use std::{
-    env::args,
-    env::Args,
+    env::{args, Args},
     io::{stdin, stdout, Write},
+    iter::Skip,
 };
 
-fn main_args(mut args: Args) {
+fn main_args(mut args: Skip<Args>) {
     while let Some(arg) = args.next() {
         let arg = arg.as_ref();
         match arg {
@@ -41,14 +37,17 @@ fn main_args(mut args: Args) {
 }
 
 fn main() {
-    if args().len() > 1 {
-        let mut args: Args = args();
-        args.next();
-        main_args(args);
-        return;
-    }
+    let args = args().skip(1);
+    return if args.len() == 0 {
+        main_args(args)
+    } else {
+        interactive_main()
+    };
+}
+
+fn interactive_main() {
     let mut platform_name = String::new();
-    print!("What platform would you link to pull from (Twitch, AfreecaTV, YouTube)? >>> ");
+    print!("What platform would you link to pull from (Twitch, AfreecaTV)? >>> ");
     stdout().flush().unwrap();
     stdin().read_line(&mut platform_name).unwrap();
     platform_name = platform_name
@@ -59,9 +58,11 @@ fn main() {
     match platform_name {
         "twitch" => twitch_reader::main(),
         "afreecatv" => afreecatv_reader::main(),
-        "youtube" => youtube_reader::main(),
         _ => {
-            error(format!("\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV, YouTube]\n", platform_name));
+            error(format!(
+                "\n'{}' was an unexpected response\nPlease choose between [Twitch, AfreecaTV]\n",
+                platform_name
+            ));
             main()
         }
     }

@@ -5,12 +5,23 @@ use crossterm::{
 use lazy_static::lazy_static;
 use regex::{Error, Regex};
 use reqwest::blocking::Client;
-use std::fmt::Display;
 use std::{
+    fmt::Display,
     io::{stdin, stdout, Write},
     num::{ParseFloatError, ParseIntError},
     process::exit,
 };
+
+pub(crate) fn get_input() -> String {
+    let mut input = String::new();
+    if let Err(e) = stdout().flush() {
+        exit_error(e);
+    }
+    if let Err(e) = stdin().read_line(&mut input) {
+        exit_error(e);
+    }
+    input.trim_end_matches(&['\r', '\n'][..]).to_owned()
+}
 
 pub(crate) const CLIENT_ID: &str = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 lazy_static! {
@@ -76,11 +87,8 @@ pub(crate) fn format_time(seconds: u32) -> String {
 }
 
 pub(crate) fn get_filter() -> Result<Regex, Error> {
-    let mut re = String::new();
     print!("(RegExp) Please enter a phrase you would like to search for >>> ");
-    stdout().flush().unwrap();
-    stdin().read_line(&mut re).unwrap();
-    re = String::from(re.trim_end_matches(&['\r', '\n'][..]));
+    let re = get_input();
     Regex::new(&format!(r"(?i)({})", re))
 }
 
