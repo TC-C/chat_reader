@@ -38,11 +38,11 @@ fn main_args(mut args: Skip<Args>) {
 
 fn main() {
     let args = args().skip(1);
-    return if args.len() == 0 {
+    if args.len() > 0 {
         main_args(args)
     } else {
         interactive_main()
-    };
+    }
 }
 
 fn interactive_main() {
