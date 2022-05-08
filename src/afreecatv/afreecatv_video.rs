@@ -12,7 +12,7 @@ lazy_static! {
     static ref STATION_NO_MATCHER: Regex = Regex::new("nStationNo=[0-9]{8}").unwrap();
     //working on stbbs info page
     static ref ROW_KEY_MATCHER: Regex = Regex::new(r#"key=".*">"#).unwrap();
-    static ref ROW_TIME_MATCHER: Regex = Regex::new(r#"file duration=".*" "#).unwrap();
+    static ref ROW_TIME_MATCHER: Regex = Regex::new(r#"file duration=".*" key"#).unwrap();
 }
 //Dummy account for accessing age restricted VODs
 const DUMMY_COOKIE: &str = "PdboxTicket=.A32.7bbT56vyHM9fKZk.SCwwbeEYGl-\
@@ -64,7 +64,8 @@ impl AfreecaVideo {
         }
     }
     fn url(&self) -> String {
-        format!("https://stbbs.afreecatv.com/api/video/get_video_info.php?nStationNo={}&nBbsNo={}&nTitleNo={}", self.station_no, self.bbs_no, self.title_no)
+        let a = format!("https://stbbs.afreecatv.com/api/video/get_video_info.php?nStationNo={}&nBbsNo={}&nTitleNo={}", self.station_no, self.bbs_no, self.title_no);
+        return a;
     }
 
     /// Identical function to `afreecatv_video::print_chat()` except that no Receiver<()> is required.
